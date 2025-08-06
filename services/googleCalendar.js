@@ -13,12 +13,11 @@ class GoogleCalendarService {
     try {
       console.log('🔍 Google Calendar initialization - checking environment variables...');
       console.log('🔍 GOOGLE_CALENDAR_CREDENTIALS exists:', !!process.env.GOOGLE_CALENDAR_CREDENTIALS);
-      console.log('🔍 GOOGLE_CALENDAR_CREDENTIALS length:', process.env.GOOGLE_CALENDAR_CREDENTIALS?.length || 0);
+      console.log('🔍 GOOGLE_CALENDAR_CREDENTIALS_JSON exists:', !!process.env.GOOGLE_CALENDAR_CREDENTIALS_JSON);
       console.log('🔍 NODE_ENV:', process.env.NODE_ENV);
+      console.log('🔍 RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT);
       console.log('🔍 All env vars starting with GOOGLE:', Object.keys(process.env).filter(key => key.startsWith('GOOGLE')));
-      console.log('🔍 Force redeploy trigger - checking env vars again');
       console.log('🔍 Total environment variables:', Object.keys(process.env).length);
-      console.log('🔍 Sample env vars:', Object.keys(process.env).slice(0, 10));
       
       let credentials;
       

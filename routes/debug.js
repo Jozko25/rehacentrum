@@ -78,20 +78,42 @@ router.get('/calendar-test', async (req, res) => {
 router.get('/env-test', (req, res) => {
   const envStatus = {
     NODE_ENV: process.env.NODE_ENV,
-    RAILWAY_ENVIRONMENT: !!process.env.RAILWAY_ENVIRONMENT,
+    RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT,
     GOOGLE_CALENDAR_CREDENTIALS: !!process.env.GOOGLE_CALENDAR_CREDENTIALS,
     GOOGLE_CALENDAR_CREDENTIALS_JSON: !!process.env.GOOGLE_CALENDAR_CREDENTIALS_JSON,
     MAIN_CALENDAR_ID: process.env.MAIN_CALENDAR_ID,
-    totalEnvVars: Object.keys(process.env).length
+    totalEnvVars: Object.keys(process.env).length,
+    allGoogleVars: Object.keys(process.env).filter(key => key.includes('GOOGLE')),
+    credentialsLength: process.env.GOOGLE_CALENDAR_CREDENTIALS_JSON?.length || 0
   };
   
   console.log('🔍 Environment status:', envStatus);
   
+  // Try to parse credentials to see if they're valid JSON
+  let credentialsValid = false;
+  let credentialsError = null;
+  
+  const creds = process.env.GOOGLE_CALENDAR_CREDENTIALS_JSON || process.env.GOOGLE_CALENDAR_CREDENTIALS;
+  if (creds) {
+    try {
+      const parsed = JSON.parse(creds);
+      credentialsValid = !!(parsed.client_email && parsed.private_key);
+      console.log('🔍 Credentials parsed successfully, has client_email:', !!parsed.client_email);
+    } catch (e) {
+      credentialsError = e.message;
+      console.log('🔍 Credentials parsing failed:', e.message);
+    }
+  }
+  
   res.json({
     environment: envStatus,
-    googleCredentialsPreview: process.env.GOOGLE_CALENDAR_CREDENTIALS_JSON ? 
-      process.env.GOOGLE_CALENDAR_CREDENTIALS_JSON.substring(0, 100) + '...' : 
-      'Not found'
+    credentials: {
+      found: !!creds,
+      length: creds?.length || 0,
+      valid: credentialsValid,
+      error: credentialsError,
+      preview: creds ? creds.substring(0, 100) + '...' : 'Not found'
+    }
   });
 });
 
