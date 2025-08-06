@@ -11,19 +11,20 @@ class BookingDatabase {
 
   async init() {
     try {
-      // Use Railway's provided DATABASE_URL or fallback to local config
-      const connectionConfig = process.env.DATABASE_URL 
-        ? {
-            connectionString: process.env.DATABASE_URL,
-            ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-          }
-        : {
-            user: process.env.POSTGRES_USER || 'postgres',
-            host: process.env.POSTGRES_HOST || 'localhost',
-            database: process.env.POSTGRES_DB || 'booking_system',
-            password: process.env.POSTGRES_PASSWORD || 'password',
-            port: process.env.POSTGRES_PORT || 5432,
-          };
+      // Check if DATABASE_URL exists (Railway PostgreSQL)
+      if (!process.env.DATABASE_URL) {
+        console.log('⚠️ No DATABASE_URL found - PostgreSQL database may not be provisioned in Railway');
+        console.log('⚠️ Falling back to SQLite for production deployment');
+        // Fall back to SQLite if PostgreSQL is not available
+        this.isInitialized = false;
+        throw new Error('PostgreSQL not available, falling back to SQLite');
+      }
+
+      // Use Railway's provided DATABASE_URL
+      const connectionConfig = {
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+      };
 
       this.pool = new Pool(connectionConfig);
 
