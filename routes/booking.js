@@ -467,20 +467,22 @@ async function bookAppointment(bookingData) {
       // Release lock on any error
       await bookingLock.releaseLock(date, time);
       console.error('Inner booking creation error:', innerError);
+      console.error('Inner error stack:', innerError.stack);
       return {
         booked: 'no',
         error: 'Failed to create booking',
-        message: 'Nepodarilo sa vytvoriť rezerváciu. Skúste to znovu.'
+        message: `Nepodarilo sa vytvoriť rezerváciu: ${innerError.message}`
       };
     }
     
   } catch (error) {
     // This should not happen since we handle the lock acquisition above
     console.error('Outer booking creation error:', error);
+    console.error('Outer error stack:', error.stack);
     return {
       booked: 'no',
       error: 'Failed to create booking',
-      message: 'Nepodarilo sa vytvoriť rezerváciu. Skúste to znovu.'
+      message: `Nepodarilo sa vytvoriť rezerváciu: ${error.message}`
     };
   }
 }
