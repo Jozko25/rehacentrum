@@ -8,6 +8,7 @@ const morgan = require('morgan');
 const bookingRoutes = require('./routes/booking');
 const adminRoutes = require('./routes/admin');
 const dashboardRoutes = require('./routes/dashboard');
+const debugRoutes = require('./routes/debug');
 const logger = require('./services/logger');
 const metricsCollector = require('./services/metrics');
 
@@ -74,6 +75,7 @@ app.get('/health', (req, res) => {
 app.use('/api/booking', bookingRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/debug', debugRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
