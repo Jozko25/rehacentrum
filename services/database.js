@@ -54,8 +54,7 @@ class BookingDatabase {
         calendar_id TEXT NOT NULL,
         event_id TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(date, time, appointment_type)
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -132,15 +131,13 @@ class BookingDatabase {
         bookingData.eventId
       );
 
-      // Update counts
+      // Update counts only (database is used for counting, not conflict detection)
       await this.incrementDailyCount(bookingData.appointmentType, bookingData.date);
       await this.incrementHourlyCount(bookingData.appointmentType, bookingData.date, bookingData.time);
 
       return { success: true, id: bookingData.id };
     } catch (error) {
-      if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-        throw new Error('Time slot already occupied');
-      }
+      console.error('Database insert error:', error);
       throw error;
     }
   }

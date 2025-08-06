@@ -334,7 +334,15 @@ async function bookAppointment(bookingData) {
   
   console.log('🔍 Mock validation result:', dataValidation);
   
-  // Validate booking
+  // Define normalizedData early for use in calendar event creation
+  const normalizedData = dataValidation.normalizedData || parsedPatientData;
+  console.log('🔍 Using normalizedData for calendar:', normalizedData);
+  
+  if (!normalizedData || !normalizedData.meno) {
+    throw new Error(`Missing patient data - normalizedData: ${JSON.stringify(normalizedData)}`);
+  }
+  
+  // Validate booking constraints (working days, time slots, daily/hourly limits)
   const validation = await bookingValidator.validateBooking(appointmentType, date, time);
   if (!validation.valid) {
     // Find closest available alternative
@@ -344,6 +352,37 @@ async function bookAppointment(bookingData) {
       error: validation.reason,
       message: getErrorMessageWithSuggestion(validation.reason, suggestion)
     };
+  }
+  
+  // Primary conflict check: Google Calendar (not database)
+  const calendarId = appointmentConfig.calendars[config.calendar] || appointmentConfig.calendars.main;
+  const startDateTime = new Date(`${date}T${time}:00+02:00`);
+  const endDateTime = new Date(startDateTime.getTime() + config.duration * 60000);
+  
+  try {
+    const dateObj = new Date(date);
+    const existingEvents = await googleCalendarService.getDayEvents(calendarId, dateObj);
+    
+    const hasConflict = existingEvents.some(event => {
+      if (!event.start || !event.end) return false;
+      
+      const eventStart = new Date(event.start.dateTime || event.start.date);
+      const eventEnd = new Date(event.end.dateTime || event.end.date);
+      
+      // Check for overlap
+      return (startDateTime < eventEnd && endDateTime > eventStart);
+    });
+    
+    if (hasConflict) {
+      const suggestion = await findAlternativeSlot(appointmentType, date, time, 'time_slot_occupied');
+      return {
+        booked: 'no',
+        error: 'time_slot_occupied',
+        message: getErrorMessageWithSuggestion('time_slot_occupied', suggestion)
+      };
+    }
+  } catch (calendarError) {
+    console.log('⚠️ Google Calendar not available for conflict checking, proceeding with caution');
   }
   
   try {
@@ -365,42 +404,16 @@ async function bookAppointment(bookingData) {
       const startDateTime = new Date(`${date}T${time}:00+02:00`);
       const endDateTime = new Date(startDateTime.getTime() + config.duration * 60000);
       
-      // Check Google Calendar for conflicts at the exact moment of booking
-      const dateObj = new Date(date);
-      let existingEvents = [];
-      try {
-        existingEvents = await googleCalendarService.getDayEvents(calendarId, dateObj);
-      } catch (calendarError) {
-        console.log('⚠️ Google Calendar not available for conflict checking, proceeding with booking');
-      }
-      
-      // Check for exact time overlap (not just general overlap)
-      const hasExactConflict = existingEvents.some(event => {
-        if (!event.start || !event.end) return false;
-        
-        const eventStart = new Date(event.start.dateTime || event.start.date);
-        const eventEnd = new Date(event.end.dateTime || event.end.date);
-        
-        // Check for exact time match (same start time) - this is stricter
-        const eventStartTime = eventStart.toTimeString().substring(0, 5);
-        const bookingStartTime = startDateTime.toTimeString().substring(0, 5);
-        
-        return eventStartTime === bookingStartTime;
-      });
-      
-      if (hasExactConflict) {
-        await bookingLock.releaseLock(date, time);
-        console.log(`❌ Exact time conflict detected for ${date} at ${time}`);
-        // Find closest available alternative
-        const suggestion = await findAlternativeSlot(appointmentType, date, time, 'time_slot_occupied');
-        return {
-          booked: 'no',
-          error: 'time_slot_occupied',
-          message: getErrorMessageWithSuggestion('time_slot_occupied', suggestion)
-        };
-      }
+      // Conflict checking already done above - proceed with calendar event creation
       
       let event;
+      console.log('🔄 About to call Google Calendar createEvent...');
+      console.log('🔄 Calendar ID:', calendarId);
+      console.log('🔄 Event data:', {
+        summary: `${config.name} - ${normalizedData.meno} ${normalizedData.priezvisko}`,
+        start: startDateTime,
+        duration: config.duration
+      });
       try {
         event = await googleCalendarService.createEvent(calendarId, {
           summary: `${config.name} - ${normalizedData.meno} ${normalizedData.priezvisko}`,
@@ -410,6 +423,9 @@ async function bookAppointment(bookingData) {
           attendees: []
         });
       } catch (calendarError) {
+        console.error('❌ Google Calendar error details:', calendarError.message);
+        console.error('❌ Calendar ID used:', calendarId);
+        console.error('❌ Full calendar error:', calendarError);
         console.log('⚠️ Google Calendar not available, creating booking without calendar event');
         // Create a mock event ID for database storage
         event = {
@@ -423,18 +439,10 @@ async function bookAppointment(bookingData) {
       
       // Add booking to database with normalized data
       console.log('🔍 dataValidation before DB:', dataValidation);
-      console.log('🔍 normalizedData exists:', !!dataValidation?.normalizedData);
-      console.log('🔍 normalizedData content:', dataValidation?.normalizedData);
-      
-      // Fallback if normalizedData is missing
-      const normalizedData = dataValidation.normalizedData || parsedPatientData;
-      console.log('🔍 Using normalizedData:', normalizedData);
+      console.log('🔍 normalizedData exists:', !!normalizedData);
+      console.log('🔍 normalizedData content:', normalizedData);
       console.log('🔍 normalizedData.meno exists:', normalizedData?.meno);
       console.log('🔍 typeof normalizedData:', typeof normalizedData);
-      
-      if (!normalizedData || !normalizedData.meno) {
-        throw new Error(`Missing patient data - normalizedData: ${JSON.stringify(normalizedData)}`);
-      }
       
       await database.createBooking({
         id: event.id,

@@ -84,11 +84,8 @@ class BookingValidator {
       return { valid: false, reason: 'invalid_time_slot' };
     }
 
-    // Check for exact time slot conflicts (prevent double booking same time)
-    const exactTimeConflict = await this.checkExactTimeConflict(appointmentType, date, time);
-    if (exactTimeConflict) {
-      return { valid: false, reason: 'time_slot_occupied' };
-    }
+    // Calendar conflict checking is done at route level with Google Calendar API
+    // Database is only used for counting, not conflict detection
 
     // Check daily limits
     if (config.maxPerDay) {
