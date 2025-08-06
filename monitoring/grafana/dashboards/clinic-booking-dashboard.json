@@ -1,0 +1,157 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Clinic Booking System Dashboard",
+    "tags": ["clinic", "booking", "healthcare"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Total Bookings Today",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(rate(clinic_booking_total[5m]))",
+            "legendFormat": "Bookings/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 80},
+                {"color": "red", "value": 100}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Active Bookings by Type",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "clinic_active_bookings",
+            "legendFormat": "{{appointment_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "System Health",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "clinic_system_health",
+            "legendFormat": "{{component}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 1,
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 0.5},
+                {"color": "green", "value": 0.8}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0}
+      },
+      {
+        "id": 4,
+        "title": "Response Times",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(clinic_http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(clinic_http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0}
+      },
+      {
+        "id": 5,
+        "title": "Booking Trends (Last 24h)",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(clinic_booking_total[1h])",
+            "legendFormat": "{{appointment_type}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 6,
+        "title": "Hourly Distribution",
+        "type": "barchart",
+        "targets": [
+          {
+            "expr": "clinic_hourly_bookings",
+            "legendFormat": "{{hour}}:00"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 7,
+        "title": "Database Performance",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(clinic_db_operation_duration_seconds_sum[5m]) / rate(clinic_db_operation_duration_seconds_count[5m])",
+            "legendFormat": "{{operation}} - {{table}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 8,
+        "title": "Error Rate",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(clinic_errors_total[5m])",
+            "legendFormat": "{{type}} - {{component}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      },
+      {
+        "id": 9,
+        "title": "Recent Logs",
+        "type": "logs",
+        "targets": [
+          {
+            "expr": "{job=\"clinic-booking-app\"}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 24}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "5s",
+    "schemaVersion": 30,
+    "version": 1
+  }
+}
