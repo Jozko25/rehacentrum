@@ -456,7 +456,7 @@ async function bookAppointment(bookingData) {
         console.error('Notification error:', error);
       });
       
-      console.log(`✅ Booking created: ${event.id} for ${dataValidation.normalizedData.meno} ${dataValidation.normalizedData.priezvisko}`);
+      console.log(`✅ Booking created: ${event.id} for ${normalizedData.meno} ${normalizedData.priezvisko}`);
       
       // Generate confirmation message with instructions
       let confirmationMessage = `Termín rezervovaný na ${date} o ${time}. ${appointmentConfig.bookingRules.orientacnyTimeMessage}.`;
