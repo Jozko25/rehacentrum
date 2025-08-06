@@ -403,10 +403,10 @@ async function bookAppointment(bookingData) {
       let event;
       try {
         event = await googleCalendarService.createEvent(calendarId, {
-          summary: `${config.name} - ${dataValidation.normalizedData.meno} ${dataValidation.normalizedData.priezvisko}`,
+          summary: `${config.name} - ${normalizedData.meno} ${normalizedData.priezvisko}`,
           start: startDateTime,
           duration: config.duration,
-          description: JSON.stringify(dataValidation.normalizedData),
+          description: JSON.stringify(normalizedData),
           attendees: []
         });
       } catch (calendarError) {
