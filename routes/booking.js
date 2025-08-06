@@ -140,7 +140,7 @@ router.post('/webhook', async (req, res) => {
       case 'find_closest_slot':
         const closestSlot = await findClosestSlot(appointment_type, date, preferred_time);
         if (closestSlot) {
-          res.send(`Najbližší voľný termín k vašej požiadavke ${preferred_time} je ${closestSlot.time} na ${date}.`);
+          res.send(`Najbližší voľný termín k vašej požiadavke ${preferred_time} je ${closestSlot} na ${date}.`);
         } else {
           // Provide helpful alternatives
           const dayOfWeek = new Date(date).getDay();
