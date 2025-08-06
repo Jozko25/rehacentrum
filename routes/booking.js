@@ -618,4 +618,39 @@ router.get('/working-hours', (req, res) => {
   });
 });
 
+// Debug endpoint to test patient data validation
+router.post('/debug', async (req, res) => {
+  try {
+    const { patient_data, appointment_type } = req.body;
+    console.log('DEBUG - Raw patient_data:', patient_data);
+    console.log('DEBUG - Type:', typeof patient_data);
+    
+    let parsedData = patient_data;
+    if (typeof patient_data === 'string') {
+      parsedData = JSON.parse(patient_data);
+    }
+    
+    console.log('DEBUG - Parsed patient_data:', parsedData);
+    console.log('DEBUG - Appointment type:', appointment_type);
+    
+    const config = appointmentConfig.appointmentTypes[appointment_type];
+    console.log('DEBUG - Config:', config);
+    console.log('DEBUG - Required fields:', config?.requiredData);
+    
+    const DataValidator = require('../utils/validation');
+    const validation = DataValidator.validatePatientData(parsedData, appointment_type);
+    console.log('DEBUG - Validation result:', validation);
+    
+    res.json({
+      success: true,
+      parsedData,
+      config: config?.requiredData,
+      validation
+    });
+  } catch (error) {
+    console.error('DEBUG - Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
