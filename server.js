@@ -140,5 +140,6 @@ console.log('🔍 Server startup - Environment variables check:');
 console.log('🔍 NODE_ENV:', process.env.NODE_ENV);
 console.log('🔍 RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT);
 console.log('🔍 GOOGLE_CALENDAR_CREDENTIALS exists:', !!process.env.GOOGLE_CALENDAR_CREDENTIALS);
+console.log('🔍 GOOGLE_CALENDAR_CREDENTIALS_JSON exists:', !!process.env.GOOGLE_CALENDAR_CREDENTIALS_JSON);
 console.log('🔍 Total env vars:', Object.keys(process.env).length);
 console.log('🔍 Sample env vars:', Object.keys(process.env).slice(0, 5));

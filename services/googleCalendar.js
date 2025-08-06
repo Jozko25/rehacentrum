@@ -22,17 +22,18 @@ class GoogleCalendarService {
       
       let credentials;
       
-      // Try environment variable first (for production)
-      if (process.env.GOOGLE_CALENDAR_CREDENTIALS) {
+      // Try environment variable first (for production)  
+      const credentialsEnv = process.env.GOOGLE_CALENDAR_CREDENTIALS || process.env.GOOGLE_CALENDAR_CREDENTIALS_JSON;
+      if (credentialsEnv) {
         try {
-          console.log('🔍 GOOGLE_CALENDAR_CREDENTIALS found, length:', process.env.GOOGLE_CALENDAR_CREDENTIALS.length);
-          console.log('🔍 First 100 chars:', process.env.GOOGLE_CALENDAR_CREDENTIALS.substring(0, 100));
-          credentials = JSON.parse(process.env.GOOGLE_CALENDAR_CREDENTIALS);
+          console.log('🔍 GOOGLE_CALENDAR_CREDENTIALS found, length:', credentialsEnv.length);
+          console.log('🔍 First 100 chars:', credentialsEnv.substring(0, 100));
+          credentials = JSON.parse(credentialsEnv);
           console.log('✅ Using Google Calendar credentials from environment variable');
           console.log('🔍 Parsed credentials keys:', Object.keys(credentials));
         } catch (parseError) {
           console.error('❌ Failed to parse GOOGLE_CALENDAR_CREDENTIALS:', parseError.message);
-          console.error('❌ Raw credentials (first 200 chars):', process.env.GOOGLE_CALENDAR_CREDENTIALS.substring(0, 200));
+          console.error('❌ Raw credentials (first 200 chars):', credentialsEnv.substring(0, 200));
           throw new Error('Invalid Google Calendar credentials format');
         }
       } else {
