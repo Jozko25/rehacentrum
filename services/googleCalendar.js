@@ -17,6 +17,8 @@ class GoogleCalendarService {
       console.log('🔍 NODE_ENV:', process.env.NODE_ENV);
       console.log('🔍 All env vars starting with GOOGLE:', Object.keys(process.env).filter(key => key.startsWith('GOOGLE')));
       console.log('🔍 Force redeploy trigger - checking env vars again');
+      console.log('🔍 Total environment variables:', Object.keys(process.env).length);
+      console.log('🔍 Sample env vars:', Object.keys(process.env).slice(0, 10));
       
       let credentials;
       
