@@ -325,10 +325,10 @@ async function bookAppointment(bookingData) {
   const dataValidation = {
     valid: true,
     normalizedData: {
-      meno: parsedPatientData.meno,
-      priezvisko: parsedPatientData.priezvisko, 
-      telefon: parsedPatientData.telefon,
-      prvotne_tazkosti: parsedPatientData.prvotne_tazkosti || parsedPatientData.dovod
+      meno: parsedPatientData.name || parsedPatientData.meno,
+      priezvisko: parsedPatientData.surname || parsedPatientData.priezvisko, 
+      telefon: parsedPatientData.phone || parsedPatientData.telefon,
+      prvotne_tazkosti: parsedPatientData.complaints || parsedPatientData.prvotne_tazkosti || parsedPatientData.dovod
     }
   };
   
