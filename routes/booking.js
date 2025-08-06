@@ -354,7 +354,7 @@ async function bookAppointment(bookingData) {
 
     try {
       // Final conflict check right before creating event (to prevent race conditions)
-      const calendarId = appointmentConfig.calendars[config.calendar];
+      const calendarId = appointmentConfig.calendars[config.calendar] || appointmentConfig.calendars.main || 'default-calendar';
       const startDateTime = new Date(`${date}T${time}:00+02:00`);
       const endDateTime = new Date(startDateTime.getTime() + config.duration * 60000);
       
