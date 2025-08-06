@@ -74,6 +74,44 @@ router.get('/calendar-test', async (req, res) => {
   }
 });
 
+// Test endpoint to check file system for credentials
+router.get('/file-test', async (req, res) => {
+  const fs = require('fs').promises;
+  const path = require('path');
+  
+  try {
+    const credentialsPath = path.join(__dirname, '../credentials/google-calendar-credentials.json');
+    console.log('🔍 Checking credentials file:', credentialsPath);
+    
+    const fileExists = await fs.access(credentialsPath).then(() => true).catch(() => false);
+    console.log('🔍 File exists:', fileExists);
+    
+    if (fileExists) {
+      const fileContent = await fs.readFile(credentialsPath, 'utf8');
+      const credentials = JSON.parse(fileContent);
+      
+      res.json({
+        fileExists: true,
+        fileSize: fileContent.length,
+        hasClientEmail: !!credentials.client_email,
+        hasPrivateKey: !!credentials.private_key,
+        clientEmail: credentials.client_email,
+        projectId: credentials.project_id
+      });
+    } else {
+      res.json({
+        fileExists: false,
+        error: 'Credentials file not found in deployment'
+      });
+    }
+  } catch (error) {
+    res.json({
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 // Test endpoint to check environment variables
 router.get('/env-test', (req, res) => {
   const envStatus = {
