@@ -24,14 +24,36 @@ class GoogleCalendarService {
       
       // Try environment variable first (for production)
       if (process.env.GOOGLE_CALENDAR_CREDENTIALS) {
-        credentials = JSON.parse(process.env.GOOGLE_CALENDAR_CREDENTIALS);
-        console.log('✅ Using Google Calendar credentials from environment variable');
+        try {
+          credentials = JSON.parse(process.env.GOOGLE_CALENDAR_CREDENTIALS);
+          console.log('✅ Using Google Calendar credentials from environment variable');
+        } catch (parseError) {
+          console.error('❌ Failed to parse GOOGLE_CALENDAR_CREDENTIALS:', parseError.message);
+          throw new Error('Invalid Google Calendar credentials format');
+        }
       } else {
-        // Fallback to file (for development)
-        const credentialsPath = process.env.GOOGLE_CALENDAR_CREDENTIALS_PATH || './credentials/google-calendar-credentials.json';
-        console.log('🔍 Trying to read credentials from file:', credentialsPath);
-        credentials = JSON.parse(await fs.readFile(credentialsPath, 'utf8'));
-        console.log('✅ Using Google Calendar credentials from file');
+        // Try to create credentials file from environment variable if it exists
+        const envCreds = process.env.GOOGLE_CALENDAR_CREDENTIALS_JSON || process.env.GOOGLE_CALENDAR_CREDENTIALS;
+        if (envCreds) {
+          try {
+            credentials = JSON.parse(envCreds);
+            console.log('✅ Using Google Calendar credentials from alternative environment variable');
+          } catch (parseError) {
+            console.error('❌ Failed to parse alternative credentials:', parseError.message);
+          }
+        }
+        
+        // If still no credentials, try file
+        if (!credentials) {
+          const credentialsPath = process.env.GOOGLE_CALENDAR_CREDENTIALS_PATH || './credentials/google-calendar-credentials.json';
+          console.log('🔍 Trying to read credentials from file:', credentialsPath);
+          credentials = JSON.parse(await fs.readFile(credentialsPath, 'utf8'));
+          console.log('✅ Using Google Calendar credentials from file');
+        }
+      }
+      
+      if (!credentials) {
+        throw new Error('No Google Calendar credentials found');
       }
       
       this.auth = new google.auth.JWT(
@@ -48,7 +70,7 @@ class GoogleCalendarService {
       console.log('✅ Google Calendar API initialized successfully');
     } catch (error) {
       console.error('❌ Failed to initialize Google Calendar API:', error.message);
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT) {
         console.log('⚠️ Google Calendar not available in production - running without calendar integration');
         this.initialized = false;
         return;
