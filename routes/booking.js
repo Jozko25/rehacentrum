@@ -429,6 +429,12 @@ async function bookAppointment(bookingData) {
       // Fallback if normalizedData is missing
       const normalizedData = dataValidation.normalizedData || parsedPatientData;
       console.log('🔍 Using normalizedData:', normalizedData);
+      console.log('🔍 normalizedData.meno exists:', normalizedData?.meno);
+      console.log('🔍 typeof normalizedData:', typeof normalizedData);
+      
+      if (!normalizedData || !normalizedData.meno) {
+        throw new Error(`Missing patient data - normalizedData: ${JSON.stringify(normalizedData)}`);
+      }
       
       await database.createBooking({
         id: event.id,
