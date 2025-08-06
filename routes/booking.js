@@ -4,7 +4,7 @@ const router = express.Router();
 const appointmentConfig = require('../config/appointments');
 const googleCalendarService = require('../services/googleCalendar');
 const bookingValidator = require('../services/bookingValidator');
-const database = require('../services/database');
+const database = require('../services/database-adapter');
 const notificationService = require('../services/notifications');
 const DataValidator = require('../utils/validation');
 const bookingLock = require('../services/bookingLock');
@@ -678,7 +678,7 @@ router.post('/debug', async (req, res) => {
     console.log('🧪 Validation result:', validation);
     
     // Try direct database creation
-    const database = require('../services/database');
+    const database = require('../services/database-adapter');
     const mockEventId = `test_${Date.now()}`;
     
     const normalizedData = validation.normalizedData || testData;

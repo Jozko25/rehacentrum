@@ -108,7 +108,7 @@ const appointmentConfig = {
   
   // Calendar (single calendar for all appointments)
   calendars: {
-    main: process.env.MAIN_CALENDAR_ID || 'default-calendar-id'
+    main: process.env.MAIN_CALENDAR_ID || 'janko.tank.poi@gmail.com'
   },
   
   // Notification settings
