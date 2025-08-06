@@ -12,20 +12,31 @@ class GoogleCalendarService {
   async initialize() {
     try {
       const credentialsPath = process.env.GOOGLE_CALENDAR_CREDENTIALS_PATH || './credentials/google-calendar-credentials.json';
-      const credentials = JSON.parse(await fs.readFile(credentialsPath, 'utf8'));
       
-      this.auth = new google.auth.JWT(
-        credentials.client_email,
-        null,
-        credentials.private_key,
-        ['https://www.googleapis.com/auth/calendar']
-      );
-      
-      await this.auth.authorize();
-      this.calendar = google.calendar({ version: 'v3', auth: this.auth });
-      this.initialized = true;
-      
-      console.log('✅ Google Calendar API initialized successfully');
+      // In production, skip Google Calendar if credentials are missing
+      try {
+        const credentials = JSON.parse(await fs.readFile(credentialsPath, 'utf8'));
+        
+        this.auth = new google.auth.JWT(
+          credentials.client_email,
+          null,
+          credentials.private_key,
+          ['https://www.googleapis.com/auth/calendar']
+        );
+        
+        await this.auth.authorize();
+        this.calendar = google.calendar({ version: 'v3', auth: this.auth });
+        this.initialized = true;
+        
+        console.log('✅ Google Calendar API initialized successfully');
+      } catch (fileError) {
+        if (process.env.NODE_ENV === 'production') {
+          console.log('⚠️ Google Calendar credentials not found in production - running without calendar integration');
+          this.initialized = false;
+          return;
+        }
+        throw fileError;
+      }
     } catch (error) {
       console.error('❌ Failed to initialize Google Calendar API:', error.message);
       throw new Error('Google Calendar initialization failed');

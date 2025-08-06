@@ -155,12 +155,18 @@ router.post('/webhook', async (req, res) => {
         break;
         
       case 'book_appointment':
+        console.log('📞 BOOKING REQUEST - appointment_type:', appointment_type, 'date:', date, 'time:', time);
+        console.log('📞 BOOKING REQUEST - patient_data type:', typeof patient_data);
+        console.log('📞 BOOKING REQUEST - patient_data value:', patient_data);
+        
         const booking = await bookAppointment({
           appointmentType: appointment_type,
           date,
           time,
           patientData: patient_data
         });
+        
+        console.log('📞 BOOKING RESULT:', booking);
         // Return the message directly as plain text
         res.send(booking.message);
         break;
