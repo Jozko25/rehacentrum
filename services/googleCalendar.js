@@ -25,10 +25,14 @@ class GoogleCalendarService {
       // Try environment variable first (for production)
       if (process.env.GOOGLE_CALENDAR_CREDENTIALS) {
         try {
+          console.log('🔍 GOOGLE_CALENDAR_CREDENTIALS found, length:', process.env.GOOGLE_CALENDAR_CREDENTIALS.length);
+          console.log('🔍 First 100 chars:', process.env.GOOGLE_CALENDAR_CREDENTIALS.substring(0, 100));
           credentials = JSON.parse(process.env.GOOGLE_CALENDAR_CREDENTIALS);
           console.log('✅ Using Google Calendar credentials from environment variable');
+          console.log('🔍 Parsed credentials keys:', Object.keys(credentials));
         } catch (parseError) {
           console.error('❌ Failed to parse GOOGLE_CALENDAR_CREDENTIALS:', parseError.message);
+          console.error('❌ Raw credentials (first 200 chars):', process.env.GOOGLE_CALENDAR_CREDENTIALS.substring(0, 200));
           throw new Error('Invalid Google Calendar credentials format');
         }
       } else {
@@ -71,6 +75,8 @@ class GoogleCalendarService {
     } catch (error) {
       console.error('❌ Failed to initialize Google Calendar API:', error.message);
       if (process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT) {
+        console.error('❌ Google Calendar initialization failed in production:', error.message);
+        console.error('❌ Error details:', error);
         console.log('⚠️ Google Calendar not available in production - running without calendar integration');
         this.initialized = false;
         return;
@@ -106,6 +112,11 @@ class GoogleCalendarService {
 
   async createEvent(calendarId, eventData) {
     await this.ensureInitialized();
+    
+    if (!this.initialized) {
+      console.error('❌ Google Calendar not initialized - cannot create event');
+      throw new Error('Google Calendar service not available');
+    }
     
     try {
       const event = {
