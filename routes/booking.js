@@ -298,13 +298,17 @@ async function bookAppointment(bookingData) {
   if (typeof patientData === 'string') {
     try {
       parsedPatientData = JSON.parse(patientData);
+      console.log('🔍 Parsed patient data:', parsedPatientData);
     } catch (e) {
+      console.error('❌ Failed to parse patient data:', patientData);
       return {
         booked: 'no',
         error: 'invalid_patient_data',
         message: 'Neplatný formát údajov pacienta'
       };
     }
+  } else {
+    console.log('🔍 Patient data (object):', parsedPatientData);
   }
   
   // Validate patient data (GDPR compliant)
