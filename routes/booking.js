@@ -426,8 +426,19 @@ async function bookAppointment(bookingData) {
         console.error('❌ Google Calendar error details:', calendarError.message);
         console.error('❌ Calendar ID used:', calendarId);
         console.error('❌ Full calendar error:', calendarError);
+        
+        // In production, fail the booking if calendar creation fails
+        if (process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT) {
+          await bookingLock.releaseLock(date, time);
+          return {
+            booked: 'no',
+            error: 'calendar_unavailable',
+            message: `Nepodarilo sa vytvoriť termín v kalendári. Chyba: ${calendarError.message}`
+          };
+        }
+        
+        // In development, create mock event
         console.log('⚠️ Google Calendar not available, creating booking without calendar event');
-        // Create a mock event ID for database storage
         event = {
           id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         };
