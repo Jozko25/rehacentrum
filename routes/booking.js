@@ -293,8 +293,22 @@ async function bookAppointment(bookingData) {
     throw new Error('Invalid appointment type');
   }
   
+  // Parse patient data if it's a JSON string (from ElevenLabs)
+  let parsedPatientData = patientData;
+  if (typeof patientData === 'string') {
+    try {
+      parsedPatientData = JSON.parse(patientData);
+    } catch (e) {
+      return {
+        booked: 'no',
+        error: 'invalid_patient_data',
+        message: 'Neplatný formát údajov pacienta'
+      };
+    }
+  }
+  
   // Validate patient data (GDPR compliant)
-  const dataValidation = DataValidator.validatePatientData(patientData, appointmentType);
+  const dataValidation = DataValidator.validatePatientData(parsedPatientData, appointmentType);
   if (!dataValidation.valid) {
     return {
       booked: 'no',
