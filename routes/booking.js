@@ -360,7 +360,12 @@ async function bookAppointment(bookingData) {
       
       // Check Google Calendar for conflicts at the exact moment of booking
       const dateObj = new Date(date);
-      const existingEvents = await googleCalendarService.getDayEvents(calendarId, dateObj);
+      let existingEvents = [];
+      try {
+        existingEvents = await googleCalendarService.getDayEvents(calendarId, dateObj);
+      } catch (calendarError) {
+        console.log('⚠️ Google Calendar not available for conflict checking, proceeding with booking');
+      }
       
       // Check for exact time overlap (not just general overlap)
       const hasExactConflict = existingEvents.some(event => {
@@ -388,13 +393,22 @@ async function bookAppointment(bookingData) {
         };
       }
       
-      const event = await googleCalendarService.createEvent(calendarId, {
-        summary: `${config.name} - ${dataValidation.normalizedData.meno} ${dataValidation.normalizedData.priezvisko}`,
-        start: startDateTime,
-        duration: config.duration,
-        description: JSON.stringify(dataValidation.normalizedData),
-        attendees: []
-      });
+      let event;
+      try {
+        event = await googleCalendarService.createEvent(calendarId, {
+          summary: `${config.name} - ${dataValidation.normalizedData.meno} ${dataValidation.normalizedData.priezvisko}`,
+          start: startDateTime,
+          duration: config.duration,
+          description: JSON.stringify(dataValidation.normalizedData),
+          attendees: []
+        });
+      } catch (calendarError) {
+        console.log('⚠️ Google Calendar not available, creating booking without calendar event');
+        // Create a mock event ID for database storage
+        event = {
+          id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        };
+      }
       
       // Keep lock until after calendar event is created successfully
       // Release lock after successful creation
@@ -406,10 +420,10 @@ async function bookAppointment(bookingData) {
         appointment_type: appointmentType,
         date,
         time,
-        patient_name: dataValidation.normalizedData.name,
-        patient_surname: dataValidation.normalizedData.surname,
-        patient_phone: dataValidation.normalizedData.phone,
-        patient_complaints: dataValidation.normalizedData.complaints || null,
+        patient_name: dataValidation.normalizedData.meno,
+        patient_surname: dataValidation.normalizedData.priezvisko,
+        patient_phone: dataValidation.normalizedData.telefon,
+        patient_complaints: dataValidation.normalizedData.prvotne_tazkosti || null,
         calendar_id: calendarId,
         event_id: event.id
       });
