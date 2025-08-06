@@ -11,6 +11,10 @@ class GoogleCalendarService {
 
   async initialize() {
     try {
+      console.log('🔍 Google Calendar initialization - checking environment variables...');
+      console.log('🔍 GOOGLE_CALENDAR_CREDENTIALS exists:', !!process.env.GOOGLE_CALENDAR_CREDENTIALS);
+      console.log('🔍 NODE_ENV:', process.env.NODE_ENV);
+      
       let credentials;
       
       // Try environment variable first (for production)
@@ -20,6 +24,7 @@ class GoogleCalendarService {
       } else {
         // Fallback to file (for development)
         const credentialsPath = process.env.GOOGLE_CALENDAR_CREDENTIALS_PATH || './credentials/google-calendar-credentials.json';
+        console.log('🔍 Trying to read credentials from file:', credentialsPath);
         credentials = JSON.parse(await fs.readFile(credentialsPath, 'utf8'));
         console.log('✅ Using Google Calendar credentials from file');
       }
