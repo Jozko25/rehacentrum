@@ -318,7 +318,10 @@ async function bookAppointment(bookingData) {
   }
   
   // Validate patient data (GDPR compliant)
+  console.log('🔍 About to validate - parsedPatientData:', parsedPatientData);
+  console.log('🔍 About to validate - appointmentType:', appointmentType);
   const dataValidation = DataValidator.validatePatientData(parsedPatientData, appointmentType);
+  console.log('🔍 Validation result:', dataValidation);
   if (!dataValidation.valid) {
     return {
       booked: 'no',
@@ -415,6 +418,9 @@ async function bookAppointment(bookingData) {
       await bookingLock.releaseLock(date, time);
       
       // Add booking to database with normalized data
+      console.log('🔍 dataValidation before DB:', dataValidation);
+      console.log('🔍 normalizedData exists:', !!dataValidation?.normalizedData);
+      console.log('🔍 normalizedData content:', dataValidation?.normalizedData);
       await database.createBooking({
         id: event.id,
         appointment_type: appointmentType,
