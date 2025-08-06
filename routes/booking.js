@@ -438,15 +438,12 @@ async function bookAppointment(bookingData) {
       
       await database.createBooking({
         id: event.id,
-        appointment_type: appointmentType,
+        appointmentType: appointmentType,
         date,
         time,
-        patient_name: normalizedData.meno,
-        patient_surname: normalizedData.priezvisko,
-        patient_phone: normalizedData.telefon,
-        patient_complaints: normalizedData.prvotne_tazkosti || null,
-        calendar_id: calendarId,
-        event_id: event.id
+        patientData: normalizedData,
+        calendarId: calendarId,
+        eventId: event.id
       });
       
       // Send notifications (don't wait for completion)
