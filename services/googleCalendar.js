@@ -47,12 +47,20 @@ class GoogleCalendarService {
           }
         }
         
-        // If still no credentials, try file
+        // If still no credentials, try file (works in production if file is deployed)
         if (!credentials) {
-          const credentialsPath = process.env.GOOGLE_CALENDAR_CREDENTIALS_PATH || './credentials/google-calendar-credentials.json';
+          const credentialsPath = path.join(__dirname, '../credentials/google-calendar-credentials.json');
           console.log('🔍 Trying to read credentials from file:', credentialsPath);
-          credentials = JSON.parse(await fs.readFile(credentialsPath, 'utf8'));
-          console.log('✅ Using Google Calendar credentials from file');
+          try {
+            const fileExists = await fs.access(credentialsPath).then(() => true).catch(() => false);
+            console.log('🔍 Credentials file exists:', fileExists);
+            if (fileExists) {
+              credentials = JSON.parse(await fs.readFile(credentialsPath, 'utf8'));
+              console.log('✅ Using Google Calendar credentials from file');
+            }
+          } catch (fileError) {
+            console.log('🔍 Cannot read credentials file:', fileError.message);
+          }
         }
       }
       
