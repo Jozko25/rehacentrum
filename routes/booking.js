@@ -421,22 +421,27 @@ async function bookAppointment(bookingData) {
       console.log('🔍 dataValidation before DB:', dataValidation);
       console.log('🔍 normalizedData exists:', !!dataValidation?.normalizedData);
       console.log('🔍 normalizedData content:', dataValidation?.normalizedData);
+      
+      // Fallback if normalizedData is missing
+      const normalizedData = dataValidation.normalizedData || parsedPatientData;
+      console.log('🔍 Using normalizedData:', normalizedData);
+      
       await database.createBooking({
         id: event.id,
         appointment_type: appointmentType,
         date,
         time,
-        patient_name: dataValidation.normalizedData.meno,
-        patient_surname: dataValidation.normalizedData.priezvisko,
-        patient_phone: dataValidation.normalizedData.telefon,
-        patient_complaints: dataValidation.normalizedData.prvotne_tazkosti || null,
+        patient_name: normalizedData.meno,
+        patient_surname: normalizedData.priezvisko,
+        patient_phone: normalizedData.telefon,
+        patient_complaints: normalizedData.prvotne_tazkosti || null,
         calendar_id: calendarId,
         event_id: event.id
       });
       
       // Send notifications (don't wait for completion)
       notificationService.sendBookingNotifications({
-        ...dataValidation.normalizedData,
+        ...normalizedData,
         appointmentType: config.name,
         date,
         time,
