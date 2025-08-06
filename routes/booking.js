@@ -645,38 +645,52 @@ router.get('/working-hours', (req, res) => {
   });
 });
 
-// Debug endpoint to test patient data validation
+// Debug endpoint to test booking with minimal data
 router.post('/debug', async (req, res) => {
   try {
-    const { patient_data, appointment_type } = req.body;
-    console.log('DEBUG - Raw patient_data:', patient_data);
-    console.log('DEBUG - Type:', typeof patient_data);
+    const testData = {
+      meno: "Jan",
+      priezvisko: "Harmady", 
+      telefon: "+421910223761",
+      poistovna: "Dôvera",
+      prvotne_tazkosti: "test"
+    };
     
-    let parsedData = patient_data;
-    if (typeof patient_data === 'string') {
-      parsedData = JSON.parse(patient_data);
-    }
-    
-    console.log('DEBUG - Parsed patient_data:', parsedData);
-    console.log('DEBUG - Appointment type:', appointment_type);
-    
-    const config = appointmentConfig.appointmentTypes[appointment_type];
-    console.log('DEBUG - Config:', config);
-    console.log('DEBUG - Required fields:', config?.requiredData);
+    console.log('🧪 Testing with:', testData);
     
     const DataValidator = require('../utils/validation');
-    const validation = DataValidator.validatePatientData(parsedData, appointment_type);
-    console.log('DEBUG - Validation result:', validation);
+    const validation = DataValidator.validatePatientData(testData, 'vstupne_vysetrenie');
+    console.log('🧪 Validation result:', validation);
+    
+    // Try direct database creation
+    const database = require('../services/database');
+    const mockEventId = `test_${Date.now()}`;
+    
+    const normalizedData = validation.normalizedData || testData;
+    console.log('🧪 Using normalized data:', normalizedData);
+    
+    await database.createBooking({
+      id: mockEventId,
+      appointment_type: 'vstupne_vysetrenie',
+      date: '2025-08-07',
+      time: '09:00',
+      patient_name: normalizedData.meno,
+      patient_surname: normalizedData.priezvisko,
+      patient_phone: normalizedData.telefon,
+      patient_complaints: normalizedData.prvotne_tazkosti || null,
+      calendar_id: 'test-calendar',
+      event_id: mockEventId
+    });
     
     res.json({
       success: true,
-      parsedData,
-      config: config?.requiredData,
-      validation
+      validation,
+      normalizedData,
+      message: "Test booking created successfully"
     });
   } catch (error) {
-    console.error('DEBUG - Error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('🧪 Test error:', error);
+    res.status(500).json({ error: error.message, stack: error.stack });
   }
 });
 
