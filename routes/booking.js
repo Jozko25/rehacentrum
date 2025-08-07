@@ -588,11 +588,24 @@ async function bookAppointment(bookingData) {
         duration: config.duration
       });
       try {
+        // Create nicely formatted description
+        const formattedDescription = [
+          `📋 ${config.name}`,
+          `👤 ${normalizedData.meno} ${normalizedData.priezvisko}`,
+          `📞 ${normalizedData.telefon}`,
+          normalizedData.prvotne_tazkosti ? `💬 ${normalizedData.prvotne_tazkosti}` : '',
+          queueNumber ? `🔢 Poradové číslo: ${queueNumber}` : '',
+          config.price ? `💰 Cena: ${config.price}€` : '',
+          config.instructions ? `ℹ️ ${config.instructions}` : '',
+          '',
+          `🕒 Rezervované: ${new Date().toLocaleString('sk-SK')}`
+        ].filter(line => line.trim() !== '').join('\n');
+
         event = await googleCalendarService.createEvent(calendarId, {
           summary: `${config.name} - ${normalizedData.meno} ${normalizedData.priezvisko}`,
           start: startDateTime,
           duration: config.duration,
-          description: JSON.stringify(normalizedData),
+          description: formattedDescription,
           attendees: []
         });
       } catch (calendarError) {
