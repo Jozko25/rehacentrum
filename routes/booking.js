@@ -126,7 +126,7 @@ router.post('/webhook', async (req, res) => {
         
         const availableSlots = await getAvailableSlots(appointment_type, date);
         if (availableSlots.length === 0) {
-          res.send(`Na dátum ${date} sú už všetky termíny obsadené. Skúste iný dátum alebo sa informujte o zrušených termínoch.`);
+          res.send(`Na dátum ${date} nie sú dostupné žiadne termíny. Skúste prosím iný dátum.`);
         } else {
           // Return only first 2 slots for AI agent with context
           const limitedSlots = availableSlots.slice(0, 2);
@@ -140,7 +140,7 @@ router.post('/webhook', async (req, res) => {
       case 'find_closest_slot':
         const closestSlot = await findClosestSlot(appointment_type, date, preferred_time);
         if (closestSlot) {
-          res.send(`Najbližší voľný termín k vašej požiadavke ${preferred_time} je ${closestSlot} na ${date}.`);
+          res.send(`Najbližší voľný termín k požadovanému času je ${closestSlot} dňa ${date}.`);
         } else {
           // Provide helpful alternatives
           const dayOfWeek = new Date(date).getDay();
@@ -192,7 +192,21 @@ router.post('/webhook', async (req, res) => {
           let reason = '';
           switch (validation.reason) {
             case 'not_working_day':
-              reason = 'je víkend alebo sviatok';
+              // Check specific reason for not working day
+              const dayOfWeek = new Date(date).getDay();
+              const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+              const isHoliday = appointmentConfig.holidays.includes(date);
+              const isVacation = appointmentConfig.vacationDates.includes(date);
+              
+              if (isWeekend) {
+                reason = 'je víkend';
+              } else if (isHoliday) {
+                reason = 'je štátny sviatok';
+              } else if (isVacation) {
+                reason = 'je deň pracovného voľna (dovolenka)';
+              } else {
+                reason = 'je deň pracovného voľna';
+              }
               break;
             case 'invalid_time_slot':
               reason = 'nie je v ordinačných hodinách';
@@ -599,11 +613,11 @@ async function findAlternativeSlot(appointmentType, originalDate, originalTime, 
 function getErrorMessage(reason) {
   const messages = {
     'invalid_appointment_type': 'Neplatný typ vyšetrenia',
-    'not_working_day': 'V tento deň ordinujeme nezaţujeme',
+    'not_working_day': 'V tento deň neordinujeme',
     'invalid_time_slot': 'Neplatný čas pre tento typ vyšetrenia',
     'time_slot_occupied': 'Tento termín je už obsadený',
     'daily_limit_reached': 'Denný limit pre tento typ vyšetrenia je naplnený',
-    'shared_daily_limit_reached': 'Denný limit pre vyšetrenia je naplnený (max 8 pacientov)',
+    'shared_daily_limit_reached': 'Denný limit pre vyšetrenia je naplnený',
     'hourly_limit_reached': 'Hodinový limit je naplnený'
   };
   
