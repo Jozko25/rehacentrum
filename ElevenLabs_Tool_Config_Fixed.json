@@ -1,0 +1,88 @@
+{
+  "name": "booker_vahovic",
+  "description": "Booking tool for Rehacentrum Humenné",
+  "disable_interruptions": false,
+  "force_pre_tool_speech": "auto",
+  "assignments": [],
+  "type": "webhook",
+  "api_schema": {
+    "url": "https://rehacentrum-production.up.railway.app/api/booking/webhook",
+    "method": "POST",
+    "path_params_schema": [],
+    "query_params_schema": [],
+    "request_body_schema": {
+      "id": "body",
+      "type": "object",
+      "description": "Booking parameters",
+      "properties": [
+        {
+          "id": "action",
+          "type": "string",
+          "value_type": "llm_prompt",
+          "description": "Action type: get_available_slots or find_closest_slot or book_appointment",
+          "dynamic_variable": "",
+          "constant_value": "",
+          "required": true
+        },
+        {
+          "id": "appointment_type",
+          "type": "string",
+          "value_type": "llm_prompt",
+          "description": "Appointment type: vstupne_vysetrenie or kontrolne_vysetrenie or sportova_prehliadka or zdravotnicke_pomucky or konzultacia",
+          "dynamic_variable": "",
+          "constant_value": "",
+          "required": true
+        },
+        {
+          "id": "date",
+          "type": "string",
+          "value_type": "llm_prompt",
+          "description": "Date in YYYY-MM-DD format",
+          "dynamic_variable": "",
+          "constant_value": "",
+          "required": false
+        },
+        {
+          "id": "time",
+          "type": "string",
+          "value_type": "llm_prompt",
+          "description": "Time in HH:MM format",
+          "dynamic_variable": "",
+          "constant_value": "",
+          "required": false
+        },
+        {
+          "id": "preferred_time",
+          "type": "string",
+          "value_type": "llm_prompt",
+          "description": "Preferred time for find_closest_slot: morning or afternoon or any",
+          "dynamic_variable": "",
+          "constant_value": "",
+          "required": false
+        },
+        {
+          "id": "patient_data",
+          "type": "string",
+          "value_type": "llm_prompt",
+          "description": "JSON string with patient info for booking",
+          "dynamic_variable": "",
+          "constant_value": "",
+          "required": false
+        }
+      ],
+      "required": false,
+      "value_type": "llm_prompt"
+    },
+    "request_headers": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "auth_connection": null
+  },
+  "response_timeout_secs": 20,
+  "dynamic_variables": {
+    "dynamic_variable_placeholders": {}
+  }
+}

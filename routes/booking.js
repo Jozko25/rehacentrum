@@ -98,10 +98,25 @@ async function findClosestSlot(appointmentType, date, preferredTime) {
     const hasConflict = existingEvents.some(event => {
       if (!event.start || !event.end) return false;
       
+      // Check for vacation/holiday events that block all bookings
+      if (event.summary && event.summary.toUpperCase().includes('DOVOLENKA')) {
+        const eventStart = new Date(event.start.dateTime || event.start.date);
+        const eventEnd = new Date(event.end.dateTime || event.end.date);
+        const dayStart = new Date(date + 'T00:00:00');
+        const dayEnd = new Date(date + 'T23:59:59');
+        
+        // Check if vacation overlaps with this day (blocks entire day)
+        const vacationBlocksDay = (dayStart < eventEnd && dayEnd > eventStart);
+        if (vacationBlocksDay) {
+          console.log(`🏖️ DOVOLENKA blocking bookings on ${date}: ${event.summary}`);
+          return true; // Block this slot due to vacation
+        }
+      }
+      
       const eventStart = new Date(event.start.dateTime || event.start.date);
       const eventEnd = new Date(event.end.dateTime || event.end.date);
       
-      // Check for overlap
+      // Check for regular appointment overlap
       return (slotStart < eventEnd && slotEnd > eventStart);
     });
     
@@ -138,6 +153,32 @@ router.post('/webhook', async (req, res) => {
         } else if (isHoliday) {
           res.send(`Dátum ${date} je sviatok. Prosím vyberte iný dátum.`);
           break;
+        }
+        
+        // Check for DOVOLENKA events that block the entire day
+        try {
+          const calendarId = appointmentConfig.calendars.main;
+          const dateObj = new Date(date);
+          const existingEvents = await googleCalendarService.getDayEvents(calendarId, dateObj);
+          
+          const hasVacation = existingEvents.some(event => {
+            if (event.summary && event.summary.toUpperCase().includes('DOVOLENKA')) {
+              const eventStart = new Date(event.start.dateTime || event.start.date);
+              const eventEnd = new Date(event.end.dateTime || event.end.date);
+              const dayStart = new Date(date + 'T00:00:00');
+              const dayEnd = new Date(date + 'T23:59:59');
+              
+              return (dayStart < eventEnd && dayEnd > eventStart);
+            }
+            return false;
+          });
+          
+          if (hasVacation) {
+            res.send(`Dátum ${date} nie je dostupný kvôli dovolenke lekára. Prosím vyberte iný dátum.`);
+            break;
+          }
+        } catch (calendarError) {
+          console.log('⚠️ Could not check for vacation events, continuing with regular availability check');
         }
         
         const availableSlots = await getAvailableSlots(appointment_type, date);
@@ -333,10 +374,25 @@ async function getAvailableSlots(appointmentType, date) {
     const hasConflict = existingEvents.some(event => {
       if (!event.start || !event.end) return false;
       
+      // Check for vacation/holiday events that block all bookings
+      if (event.summary && event.summary.toUpperCase().includes('DOVOLENKA')) {
+        const eventStart = new Date(event.start.dateTime || event.start.date);
+        const eventEnd = new Date(event.end.dateTime || event.end.date);
+        const dayStart = new Date(date + 'T00:00:00');
+        const dayEnd = new Date(date + 'T23:59:59');
+        
+        // Check if vacation overlaps with this day (blocks entire day)
+        const vacationBlocksDay = (dayStart < eventEnd && dayEnd > eventStart);
+        if (vacationBlocksDay) {
+          console.log(`🏖️ DOVOLENKA blocking bookings on ${date}: ${event.summary}`);
+          return true; // Block this slot due to vacation
+        }
+      }
+      
       const eventStart = new Date(event.start.dateTime || event.start.date);
       const eventEnd = new Date(event.end.dateTime || event.end.date);
       
-      // Check for overlap
+      // Check for regular appointment overlap
       return (slotStart < eventEnd && slotEnd > eventStart);
     });
     
