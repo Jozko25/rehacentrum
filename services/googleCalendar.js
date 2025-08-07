@@ -163,6 +163,13 @@ class GoogleCalendarService {
         }
       };
 
+      // Set color based on appointment type - red for sportova_prehliadka, blue for others
+      if (eventData.appointmentType === 'sportova_prehliadka') {
+        event.colorId = '11'; // Red
+      } else {
+        event.colorId = '9';  // Blue
+      }
+
       console.log('📅 Creating event on calendar:', calendarId);
       console.log('📅 Event details:', {
         summary: event.summary,

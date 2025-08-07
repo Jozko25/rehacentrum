@@ -614,7 +614,8 @@ async function bookAppointment(bookingData) {
           start: startDateTime,
           duration: config.duration,
           description: formattedDescription,
-          attendees: []
+          attendees: [],
+          appointmentType: appointmentType
         });
       } catch (calendarError) {
         console.error('❌ Google Calendar error details:', calendarError.message);
