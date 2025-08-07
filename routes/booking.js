@@ -138,19 +138,30 @@ router.post('/webhook', async (req, res) => {
         break;
         
       case 'find_closest_slot':
-        const closestSlot = await findClosestSlot(appointment_type, date, preferred_time);
-        if (closestSlot) {
-          res.send(`Najbližší voľný termín k požadovanému času je ${closestSlot} dňa ${date}.`);
-        } else {
-          // Provide helpful alternatives
-          const dayOfWeek = new Date(date).getDay();
-          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+        // Find closest slot from today onwards
+        const today = new Date();
+        const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        
+        let foundSlot = null;
+        let searchDate = new Date(startDate);
+        
+        // Search up to 30 days ahead
+        for (let i = 0; i < 30; i++) {
+          const searchDateStr = searchDate.toISOString().split('T')[0];
+          const slot = await findClosestSlot(appointment_type, searchDateStr, preferred_time);
           
-          if (isWeekend) {
-            res.send(`Dátum ${date} je víkend. Skúste pracovný deň pondelok až piatok.`);
-          } else {
-            res.send(`Na dátum ${date} nie je dostupný žiadny termín. Skúste iný dátum alebo kontaktujte ordinačku pre možné zrušené termíny.`);
+          if (slot) {
+            foundSlot = { time: slot, date: searchDateStr };
+            break;
           }
+          
+          searchDate.setDate(searchDate.getDate() + 1);
+        }
+        
+        if (foundSlot) {
+          res.send(`Najbližší voľný termín je ${foundSlot.time} dňa ${foundSlot.date}.`);
+        } else {
+          res.send(`V najbližších 30 dňoch nie je dostupný žiadny termín pre ${appointment_type}. Prosím kontaktujte ordinačku.`);
         }
         break;
         
