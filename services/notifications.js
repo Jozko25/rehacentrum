@@ -124,28 +124,25 @@ class NotificationService {
   }
 
   generateSMSMessage(bookingData) {
-    const { meno, priezvisko, appointmentType, date, time, instructions, price } = bookingData;
+    const { meno, date, time, instructions, price } = bookingData;
     
-    // Professional SMS message with all necessary information
-    const formattedDate = this.formatDate(date);
+    // Single segment SMS (under 160 characters)
+    const shortDate = this.formatShortDate(date);
     
-    let message = `POTVRDENIE REZERVACIE\n\n`;
-    message += `Pacient: ${meno} ${priezvisko}\n`;
-    message += `Typ vysetrenia: ${appointmentType}\n`;
-    message += `Datum: ${formattedDate}\n`;
-    message += `Cas: ${time} (cas je orientacny)\n`;
+    let message = `Dobrý deň ${meno}, Váš termín bol rezervovaný na ${shortDate} o ${time}`;
     
     if (price) {
-      message += `Cena: ${price} EUR\n`;
+      message += `, cena ${price}€`;
     }
     
     if (instructions) {
-      message += `\nDOLEZITE INFORMACIE:\n${instructions}\n`;
+      const shortInstruction = this.getShortInstruction(instructions);
+      if (shortInstruction) {
+        message += `, ${shortInstruction}`;
+      }
     }
     
-    message += `\nOrdiancia Dr. Milan Vahovic\n`;
-    message += `Humenne\n`;
-    message += `Tel: ${appointmentConfig.fallbackPhone}`;
+    message += `. Rehacentrum Humenné`;
     
     return message;
   }
