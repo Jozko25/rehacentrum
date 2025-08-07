@@ -148,7 +148,10 @@ router.post('/webhook', async (req, res) => {
         
         // Search up to 30 days ahead
         for (let i = 0; i < 30; i++) {
-          const searchDateStr = searchDate.toISOString().split('T')[0];
+          const year = searchDate.getFullYear();
+          const month = String(searchDate.getMonth() + 1).padStart(2, '0');
+          const day = String(searchDate.getDate()).padStart(2, '0');
+          const searchDateStr = `${year}-${month}-${day}`;
           const slot = await findClosestSlot(appointment_type, searchDateStr, preferred_time);
           
           if (slot) {
