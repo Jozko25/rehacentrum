@@ -12,13 +12,39 @@ class NotificationService {
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     const smsNumber = process.env.TWILIO_SMS_NUMBER;
     
+    // Comprehensive Railway environment debugging
+    console.log('🔍 RAILWAY ENV DEBUG - NODE_ENV:', process.env.NODE_ENV);
+    console.log('🔍 RAILWAY ENV DEBUG - RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT);
+    console.log('🔍 RAILWAY ENV DEBUG - RAILWAY_PROJECT_NAME:', process.env.RAILWAY_PROJECT_NAME);
+    console.log('🔍 RAILWAY ENV DEBUG - RAILWAY_SERVICE_NAME:', process.env.RAILWAY_SERVICE_NAME);
+    console.log('🔍 RAILWAY ENV DEBUG - Total env vars:', Object.keys(process.env).length);
+    
+    // List all environment variables starting with TWILIO
+    const twilioEnvVars = Object.keys(process.env).filter(key => key.startsWith('TWILIO'));
+    console.log('🔍 RAILWAY ENV DEBUG - All TWILIO env vars:', twilioEnvVars);
+    
+    // Check exact variable values
+    console.log('🔍 TWILIO DEBUG - Account SID type:', typeof accountSid);
     console.log('🔍 TWILIO DEBUG - Account SID:', accountSid ? `${accountSid.substring(0, 10)}...` : 'NOT SET');
+    console.log('🔍 TWILIO DEBUG - Auth Token type:', typeof authToken);
     console.log('🔍 TWILIO DEBUG - Auth Token:', authToken ? `${authToken.substring(0, 10)}...` : 'NOT SET');
+    console.log('🔍 TWILIO DEBUG - SMS Number type:', typeof smsNumber);
     console.log('🔍 TWILIO DEBUG - SMS Number:', smsNumber || 'NOT SET');
     console.log('🔍 TWILIO DEBUG - Account SID starts with AC:', accountSid ? accountSid.startsWith('AC') : 'N/A');
     console.log('🔍 TWILIO DEBUG - Auth Token length:', authToken ? authToken.length : 0);
-    console.log('🔍 TWILIO DEBUG - NODE_ENV:', process.env.NODE_ENV);
-    console.log('🔍 TWILIO DEBUG - RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT);
+    
+    // Check if variables exist with different case or naming
+    console.log('🔍 RAILWAY ENV DEBUG - twilio_account_sid:', process.env.twilio_account_sid ? 'EXISTS' : 'NOT SET');
+    console.log('🔍 RAILWAY ENV DEBUG - Twilio_Account_SID:', process.env.Twilio_Account_SID ? 'EXISTS' : 'NOT SET');
+    
+    // List first few chars of all env vars to see what's available
+    const envSample = {};
+    Object.keys(process.env).forEach(key => {
+      if (key.toLowerCase().includes('twilio') || key.toLowerCase().includes('sms')) {
+        envSample[key] = process.env[key] ? process.env[key].substring(0, 10) + '...' : 'EMPTY';
+      }
+    });
+    console.log('🔍 RAILWAY ENV DEBUG - All twilio/sms related vars:', envSample);
     
     if (accountSid && authToken && accountSid.startsWith('AC') && authToken.length > 10) {
       try {
