@@ -662,6 +662,11 @@ async function bookAppointment(bookingData) {
       // Generate confirmation message with instructions
       let confirmationMessage = `Termín rezervovaný na ${date} o ${time}. ${appointmentConfig.bookingRules.orientacnyTimeMessage}.`;
       
+      // Add queue number to confirmation
+      if (queueNumber) {
+        confirmationMessage += ` Vaše poradové číslo je ${queueNumber}.`;
+      }
+      
       if (config.instructions) {
         confirmationMessage += ` ${config.instructions}`;
       }
