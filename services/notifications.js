@@ -17,20 +17,31 @@ class NotificationService {
     console.log('🔍 TWILIO DEBUG - SMS Number:', smsNumber || 'NOT SET');
     console.log('🔍 TWILIO DEBUG - Account SID starts with AC:', accountSid ? accountSid.startsWith('AC') : 'N/A');
     console.log('🔍 TWILIO DEBUG - Auth Token length:', authToken ? authToken.length : 0);
+    console.log('🔍 TWILIO DEBUG - NODE_ENV:', process.env.NODE_ENV);
+    console.log('🔍 TWILIO DEBUG - RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT);
     
     if (accountSid && authToken && accountSid.startsWith('AC') && authToken.length > 10) {
       try {
         this.twilioClient = twilio(accountSid, authToken);
         console.log('✅ Twilio initialized successfully');
         console.log('✅ Twilio client created, ready to send SMS');
+        console.log('✅ Twilio client type:', typeof this.twilioClient);
+        console.log('✅ Twilio client constructor:', this.twilioClient.constructor.name);
       } catch (error) {
         console.log('❌ Twilio initialization failed:', error.message);
         console.log('❌ Full error:', error);
+        console.log('❌ Error stack:', error.stack);
         console.log('⚠️ Using webhook fallback for notifications');
+        this.twilioClient = null;
       }
     } else {
-      console.log('❌ Twilio credentials not found or invalid');
+      console.log('❌ Twilio credentials validation failed:');
+      console.log('❌ - Account SID exists:', !!accountSid);
+      console.log('❌ - Auth Token exists:', !!authToken);
+      console.log('❌ - Account SID starts with AC:', accountSid ? accountSid.startsWith('AC') : false);
+      console.log('❌ - Auth Token length > 10:', authToken ? authToken.length > 10 : false);
       console.log('❌ Using webhook fallback for notifications');
+      this.twilioClient = null;
     }
   }
 
@@ -182,11 +193,17 @@ class NotificationService {
       console.log('📱 SMS DEBUG - Using Twilio direct SMS');
       return await this.sendTwilioSMS(phoneNumber, message);
     } else if (provider === 'twilio') {
-      console.log('📱 SMS DEBUG - Twilio configured but client not initialized, trying anyway');
-      try {
+      console.log('📱 SMS DEBUG - Twilio configured but client not initialized, trying to reinitialize and send');
+      
+      // Force reinitialize in case of Railway environment issues
+      console.log('📱 SMS DEBUG - Force reinitializing Twilio for Railway...');
+      this.initializeTwilio();
+      
+      if (this.twilioClient) {
+        console.log('📱 SMS DEBUG - Twilio reinitialized successfully, sending SMS');
         return await this.sendTwilioSMS(phoneNumber, message);
-      } catch (error) {
-        console.log('📱 SMS DEBUG - Twilio direct failed, falling back to webhook');
+      } else {
+        console.log('📱 SMS DEBUG - Twilio reinitialize failed, falling back to webhook');
         return await this.sendWebhookSMS(phoneNumber, message, provider);
       }
     } else {
