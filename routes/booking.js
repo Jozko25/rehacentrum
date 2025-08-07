@@ -143,6 +143,12 @@ router.post('/webhook', async (req, res) => {
         const slovakTime = new Date(today.toLocaleString("en-US", {timeZone: "Europe/Bratislava"}));
         const startDate = new Date(slovakTime.getFullYear(), slovakTime.getMonth(), slovakTime.getDate());
         
+        // Debug timezone
+        console.log('🕐 TIMEZONE DEBUG - Server UTC time:', today.toISOString());
+        console.log('🕐 TIMEZONE DEBUG - Slovak time string:', today.toLocaleString("en-US", {timeZone: "Europe/Bratislava"}));
+        console.log('🕐 TIMEZONE DEBUG - Slovak time object:', slovakTime.toISOString());
+        console.log('🕐 TIMEZONE DEBUG - Start date for search:', startDate.toISOString().split('T')[0]);
+        
         let foundSlot = null;
         let searchDate = new Date(startDate);
         
