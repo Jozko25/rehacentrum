@@ -138,16 +138,15 @@ router.post('/webhook', async (req, res) => {
         break;
         
       case 'find_closest_slot':
-        // Find closest slot from today onwards (Slovak timezone)
+        // Find closest slot from today onwards (Slovak timezone) 
         const today = new Date();
-        const slovakTime = new Date(today.toLocaleString("en-US", {timeZone: "Europe/Bratislava"}));
-        const startDate = new Date(slovakTime.getFullYear(), slovakTime.getMonth(), slovakTime.getDate());
+        // Get today's date in Slovak timezone properly
+        const slovakToday = new Date(today.toLocaleString("sv-SE", {timeZone: "Europe/Bratislava"}));
+        const startDate = new Date(slovakToday.getFullYear(), slovakToday.getMonth(), slovakToday.getDate());
         
-        // Debug timezone
-        console.log('🕐 TIMEZONE DEBUG - Server UTC time:', today.toISOString());
-        console.log('🕐 TIMEZONE DEBUG - Slovak time string:', today.toLocaleString("en-US", {timeZone: "Europe/Bratislava"}));
-        console.log('🕐 TIMEZONE DEBUG - Slovak time object:', slovakTime.toISOString());
-        console.log('🕐 TIMEZONE DEBUG - Start date for search:', startDate.toISOString().split('T')[0]);
+        console.log('🕐 FIXED - UTC time:', today.toISOString());
+        console.log('🕐 FIXED - Slovak date:', slovakToday.toISOString().split('T')[0]);
+        console.log('🕐 FIXED - Search starts from:', startDate.toISOString().split('T')[0]);
         
         let foundSlot = null;
         let searchDate = new Date(startDate);
