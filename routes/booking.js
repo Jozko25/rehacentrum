@@ -484,13 +484,48 @@ async function bookAppointment(bookingData) {
     const dateObj = new Date(date);
     const existingEvents = await googleCalendarService.getDayEvents(calendarId, dateObj);
     
+    // Check specifically for vacation events first
+    const hasVacation = existingEvents.some(event => {
+      if (event.summary && event.summary.toUpperCase().includes('DOVOLENKA')) {
+        const eventStart = new Date(event.start.dateTime || event.start.date);
+        const eventEnd = new Date(event.end.dateTime || event.end.date);
+        const dayStart = new Date(date + 'T00:00:00');
+        const dayEnd = new Date(date + 'T23:59:59');
+        
+        const vacationBlocksDay = (dayStart < eventEnd && dayEnd > eventStart);
+        if (vacationBlocksDay) {
+          console.log(`🏖️ DOVOLENKA blocking booking on ${date}: ${event.summary}`);
+          return true;
+        }
+      }
+      return false;
+    });
+    
+    if (hasVacation) {
+      // Format date in Slovak format for the message
+      const dateParts = date.split('-');
+      const slovakDate = `${dateParts[2]}.${dateParts[1]}.${dateParts[0]}`;
+      
+      return {
+        booked: 'no',
+        error: 'vacation_period',
+        message: `Dátum ${slovakDate} nie je dostupný kvôli dovolenke lekára. Prosím vyberte iný dátum.`
+      };
+    }
+    
+    // Check for regular appointment conflicts
     hasConflict = existingEvents.some(event => {
       if (!event.start || !event.end) return false;
+      
+      // Skip vacation events as they're already handled above
+      if (event.summary && event.summary.toUpperCase().includes('DOVOLENKA')) {
+        return false;
+      }
       
       const eventStart = new Date(event.start.dateTime || event.start.date);
       const eventEnd = new Date(event.end.dateTime || event.end.date);
       
-      // Check for overlap
+      // Check for regular appointment overlap
       return (startDateTime < eventEnd && endDateTime > eventStart);
     });
     
