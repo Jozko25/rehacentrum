@@ -170,7 +170,10 @@ router.post('/webhook', async (req, res) => {
         }
         
         if (foundSlot) {
-          res.send(`Najbližší voľný termín je ${foundSlot.time} dňa ${foundSlot.date}.`);
+          // Format date in Slovak format (DD.MM.YYYY) to avoid US interpretation
+          const dateParts = foundSlot.date.split('-');
+          const slovakDate = `${dateParts[2]}.${dateParts[1]}.${dateParts[0]}`;
+          res.send(`Najbližší voľný termín je ${foundSlot.time} dňa ${slovakDate}.`);
         } else {
           res.send(`V najbližších 30 dňoch nie je dostupný žiadny termín pre ${appointment_type}. Prosím kontaktujte ordinačku.`);
         }
