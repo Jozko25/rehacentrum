@@ -42,6 +42,16 @@ async function findClosestSlot(appointmentType, date, preferredTime) {
     return null;
   }
   
+  // Get current Slovak time to filter out past slots
+  const now = new Date();
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const slovakTime = new Date(utcTime + (2 * 3600000)); // UTC+2 for summer
+  const currentHour = slovakTime.getHours();
+  const currentMinute = slovakTime.getMinutes();
+  const currentTotalMinutes = currentHour * 60 + currentMinute;
+  
+  const today = date === slovakTime.toISOString().split('T')[0];
+  
   // Get existing events from Google Calendar
   const calendarId = appointmentConfig.calendars.main;
   const dateObj = new Date(date);
@@ -69,6 +79,12 @@ async function findClosestSlot(appointmentType, date, preferredTime) {
   
   // Check each slot for availability
   for (const slot of sortedSlots) {
+    // Skip slots in the past if it's today
+    if (today && slot.minutes <= currentTotalMinutes) {
+      console.log(`⏰ Skipping past slot: ${slot.time} (current time: ${currentHour}:${currentMinute.toString().padStart(2, '0')})`);
+      continue;
+    }
+    
     // Check basic constraints only (skip database limits)
     const validation = await bookingValidator.validateBasicConstraints(appointmentType, date, slot.time);
     if (!validation.valid) {
