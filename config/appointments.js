@@ -114,7 +114,7 @@ const appointmentConfig = {
   // Notification settings
   notifications: {
     whatsapp: {
-      enabled: true,
+      enabled: false, // Disabled until WhatsApp number is configured
       provider: 'twilio', // or 'zapier'
       automatic: true
     },

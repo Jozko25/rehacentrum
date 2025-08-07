@@ -174,9 +174,23 @@ class NotificationService {
   async sendSMS(phoneNumber, message) {
     const provider = appointmentConfig.notifications.sms.provider;
     
+    console.log('📱 SMS DEBUG - Provider:', provider);
+    console.log('📱 SMS DEBUG - Twilio client exists:', !!this.twilioClient);
+    console.log('📱 SMS DEBUG - Will use Twilio direct:', provider === 'twilio' && this.twilioClient);
+    
     if (provider === 'twilio' && this.twilioClient) {
+      console.log('📱 SMS DEBUG - Using Twilio direct SMS');
       return await this.sendTwilioSMS(phoneNumber, message);
+    } else if (provider === 'twilio') {
+      console.log('📱 SMS DEBUG - Twilio configured but client not initialized, trying anyway');
+      try {
+        return await this.sendTwilioSMS(phoneNumber, message);
+      } catch (error) {
+        console.log('📱 SMS DEBUG - Twilio direct failed, falling back to webhook');
+        return await this.sendWebhookSMS(phoneNumber, message, provider);
+      }
     } else {
+      console.log('📱 SMS DEBUG - Using webhook SMS with provider:', provider);
       return await this.sendWebhookSMS(phoneNumber, message, provider);
     }
   }
@@ -197,6 +211,16 @@ class NotificationService {
     console.log('📱 TWILIO SMS DEBUG - Message length:', message.length);
     console.log('📱 TWILIO SMS DEBUG - From number:', process.env.TWILIO_SMS_NUMBER);
     console.log('📱 TWILIO SMS DEBUG - Twilio client exists:', !!this.twilioClient);
+    
+    // Try to initialize Twilio if client is null
+    if (!this.twilioClient) {
+      console.log('📱 TWILIO SMS DEBUG - Client null, reinitializing...');
+      this.initializeTwilio();
+    }
+    
+    if (!this.twilioClient) {
+      throw new Error('Twilio client not initialized - check credentials');
+    }
     
     try {
       const result = await this.twilioClient.messages.create({
