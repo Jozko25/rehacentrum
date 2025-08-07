@@ -18,7 +18,10 @@ class BookingValidator {
   }
 
   isWeekend(date) {
-    const day = new Date(date).getDay();
+    // Use Slovak timezone to determine day of week
+    const utcDate = new Date(date);
+    const slovakDate = new Date(utcDate.toLocaleString("en-US", {timeZone: "Europe/Bratislava"}));
+    const day = slovakDate.getDay();
     return day === 0 || day === 6; // Sunday = 0, Saturday = 6
   }
 
