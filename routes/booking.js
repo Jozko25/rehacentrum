@@ -577,6 +577,10 @@ async function bookAppointment(bookingData) {
       const startDateTime = new Date(`${date}T${time}:00+02:00`);
       const endDateTime = new Date(startDateTime.getTime() + config.duration * 60000);
       
+      // Get next queue number for this date BEFORE creating calendar event
+      const queueNumber = await database.getNextQueueNumber(date);
+      console.log(`🔢 Assigned queue number ${queueNumber} for ${date}`);
+      
       // Conflict checking already done above - proceed with calendar event creation
       
       let event;
@@ -633,10 +637,6 @@ async function bookAppointment(bookingData) {
       // Keep lock until after calendar event is created successfully
       // Release lock after successful creation
       await bookingLock.releaseLock(date, time);
-      
-      // Get next queue number for this date
-      const queueNumber = await database.getNextQueueNumber(date);
-      console.log(`🔢 Assigned queue number ${queueNumber} for ${date}`);
       
       // Add booking to database with normalized data
       console.log('🔍 dataValidation before DB:', dataValidation);
