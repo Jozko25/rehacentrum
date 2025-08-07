@@ -174,7 +174,7 @@ router.post('/webhook', async (req, res) => {
           });
           
           if (hasVacation) {
-            res.send(`Dátum ${date} nie je dostupný kvôli dovolenke lekára. Prosím vyberte iný dátum.`);
+            res.send(`Dňa ${date} neordinujeme kvôli dovolenke. Prosím vyberte iný dátum.`);
             break;
           }
         } catch (calendarError) {
@@ -484,15 +484,27 @@ async function bookAppointment(bookingData) {
     const dateObj = new Date(date);
     const existingEvents = await googleCalendarService.getDayEvents(calendarId, dateObj);
     
+    // Log all events for debugging
+    console.log(`🔍 VACATION DEBUG - Found ${existingEvents.length} events on ${date}`);
+    existingEvents.forEach((event, index) => {
+      console.log(`🔍 VACATION DEBUG - Event ${index}: "${event.summary}" from ${event.start?.dateTime || event.start?.date} to ${event.end?.dateTime || event.end?.date}`);
+    });
+    
     // Check specifically for vacation events first
     const hasVacation = existingEvents.some(event => {
       if (event.summary && event.summary.toUpperCase().includes('DOVOLENKA')) {
+        console.log(`🏖️ VACATION DEBUG - Found DOVOLENKA event: ${event.summary}`);
         const eventStart = new Date(event.start.dateTime || event.start.date);
         const eventEnd = new Date(event.end.dateTime || event.end.date);
         const dayStart = new Date(date + 'T00:00:00');
         const dayEnd = new Date(date + 'T23:59:59');
         
+        console.log(`🏖️ VACATION DEBUG - Event range: ${eventStart.toISOString()} to ${eventEnd.toISOString()}`);
+        console.log(`🏖️ VACATION DEBUG - Day range: ${dayStart.toISOString()} to ${dayEnd.toISOString()}`);
+        
         const vacationBlocksDay = (dayStart < eventEnd && dayEnd > eventStart);
+        console.log(`🏖️ VACATION DEBUG - Blocks day: ${vacationBlocksDay}`);
+        
         if (vacationBlocksDay) {
           console.log(`🏖️ DOVOLENKA blocking booking on ${date}: ${event.summary}`);
           return true;
@@ -500,6 +512,8 @@ async function bookAppointment(bookingData) {
       }
       return false;
     });
+    
+    console.log(`🏖️ VACATION DEBUG - hasVacation result: ${hasVacation}`);
     
     if (hasVacation) {
       // Format date in Slovak format for the message
@@ -509,7 +523,7 @@ async function bookAppointment(bookingData) {
       return {
         booked: 'no',
         error: 'vacation_period',
-        message: `Dátum ${slovakDate} nie je dostupný kvôli dovolenke lekára. Prosím vyberte iný dátum.`
+        message: `Dňa ${slovakDate} neordinujeme kvôli dovolenke. Prosím vyberte iný dátum.`
       };
     }
     
