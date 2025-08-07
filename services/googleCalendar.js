@@ -19,6 +19,15 @@ class GoogleCalendarService {
       console.log('🔍 All env vars starting with GOOGLE:', Object.keys(process.env).filter(key => key.startsWith('GOOGLE')));
       console.log('🔍 Total environment variables:', Object.keys(process.env).length);
       
+      // Debug Railway environment specifically
+      if (process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production') {
+        console.log('🔍 PRODUCTION/RAILWAY environment detected');
+        console.log('🔍 GOOGLE_CALENDAR_CREDENTIALS type:', typeof process.env.GOOGLE_CALENDAR_CREDENTIALS);
+        if (process.env.GOOGLE_CALENDAR_CREDENTIALS) {
+          console.log('🔍 GOOGLE_CALENDAR_CREDENTIALS sample:', process.env.GOOGLE_CALENDAR_CREDENTIALS.substring(0, 50) + '...');
+        }
+      }
+      
       let credentials;
       
       // Try environment variable first (for production)  
@@ -27,12 +36,19 @@ class GoogleCalendarService {
         try {
           console.log('🔍 GOOGLE_CALENDAR_CREDENTIALS found, length:', credentialsEnv.length);
           console.log('🔍 First 100 chars:', credentialsEnv.substring(0, 100));
-          credentials = JSON.parse(credentialsEnv);
+          
+          // Handle both string and already parsed JSON
+          if (typeof credentialsEnv === 'string') {
+            credentials = JSON.parse(credentialsEnv);
+          } else {
+            credentials = credentialsEnv;
+          }
+          
           console.log('✅ Using Google Calendar credentials from environment variable');
           console.log('🔍 Parsed credentials keys:', Object.keys(credentials));
         } catch (parseError) {
           console.error('❌ Failed to parse GOOGLE_CALENDAR_CREDENTIALS:', parseError.message);
-          console.error('❌ Raw credentials (first 200 chars):', credentialsEnv.substring(0, 200));
+          console.error('❌ Raw credentials (first 200 chars):', typeof credentialsEnv === 'string' ? credentialsEnv.substring(0, 200) : JSON.stringify(credentialsEnv).substring(0, 200));
           throw new Error('Invalid Google Calendar credentials format');
         }
       } else {
