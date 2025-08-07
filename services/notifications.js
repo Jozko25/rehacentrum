@@ -10,22 +10,37 @@ class NotificationService {
   initializeTwilio() {
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const smsNumber = process.env.TWILIO_SMS_NUMBER;
+    
+    console.log('🔍 TWILIO DEBUG - Account SID:', accountSid ? `${accountSid.substring(0, 10)}...` : 'NOT SET');
+    console.log('🔍 TWILIO DEBUG - Auth Token:', authToken ? `${authToken.substring(0, 10)}...` : 'NOT SET');
+    console.log('🔍 TWILIO DEBUG - SMS Number:', smsNumber || 'NOT SET');
+    console.log('🔍 TWILIO DEBUG - Account SID starts with AC:', accountSid ? accountSid.startsWith('AC') : 'N/A');
+    console.log('🔍 TWILIO DEBUG - Auth Token length:', authToken ? authToken.length : 0);
     
     if (accountSid && authToken && accountSid.startsWith('AC') && authToken.length > 10) {
       try {
         this.twilioClient = twilio(accountSid, authToken);
         console.log('✅ Twilio initialized successfully');
+        console.log('✅ Twilio client created, ready to send SMS');
       } catch (error) {
-        console.log('⚠️ Twilio initialization failed:', error.message);
+        console.log('❌ Twilio initialization failed:', error.message);
+        console.log('❌ Full error:', error);
         console.log('⚠️ Using webhook fallback for notifications');
       }
     } else {
-      console.log('⚠️ Twilio credentials not found or invalid, using webhook fallback');
+      console.log('❌ Twilio credentials not found or invalid');
+      console.log('❌ Using webhook fallback for notifications');
     }
   }
 
   async sendBookingNotifications(bookingData) {
     const { telefon, email, appointmentType, date, time, instructions, price, bookingId } = bookingData;
+    
+    console.log('🔔 NOTIFICATION DEBUG - Starting notification process');
+    console.log('🔔 NOTIFICATION DEBUG - Booking data:', { telefon, appointmentType, date, time, price, bookingId });
+    console.log('🔔 NOTIFICATION DEBUG - SMS enabled:', appointmentConfig.notifications.sms.enabled);
+    console.log('🔔 NOTIFICATION DEBUG - SMS provider:', appointmentConfig.notifications.sms.provider);
     
     try {
       const promises = [];
@@ -34,49 +49,103 @@ class NotificationService {
       const smsMessage = this.generateSMSMessage(bookingData);
       const whatsappMessage = this.generateWhatsAppMessage(bookingData);
       
+      console.log('🔔 NOTIFICATION DEBUG - Generated SMS message:', smsMessage);
+      
       // Send SMS notification
       if (appointmentConfig.notifications.sms.enabled) {
+        console.log('🔔 NOTIFICATION DEBUG - Adding SMS to promises queue');
         promises.push(this.sendSMS(telefon, smsMessage));
       }
       
       // Send WhatsApp notification
       if (appointmentConfig.notifications.whatsapp.enabled) {
+        console.log('🔔 NOTIFICATION DEBUG - Adding WhatsApp to promises queue');
         promises.push(this.sendWhatsApp(telefon, whatsappMessage));
       }
       
       // Send email notification if requested
       if (email && appointmentConfig.notifications.email.enabled === 'on_request') {
+        console.log('🔔 NOTIFICATION DEBUG - Adding email to promises queue');
         promises.push(this.sendEmail(email, bookingData));
       }
       
-      await Promise.allSettled(promises);
-      console.log(`✅ Notifications sent for booking ${bookingId}`);
+      console.log('🔔 NOTIFICATION DEBUG - Executing', promises.length, 'notification promises');
+      const results = await Promise.allSettled(promises);
+      
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          console.log(`✅ Notification ${index + 1} sent successfully:`, result.value);
+        } else {
+          console.error(`❌ Notification ${index + 1} failed:`, result.reason);
+        }
+      });
+      
+      console.log(`✅ Notification process completed for booking ${bookingId}`);
     } catch (error) {
-      console.error('Error sending notifications:', error);
+      console.error('❌ Error in notification process:', error);
     }
   }
 
   generateSMSMessage(bookingData) {
-    const { meno, priezvisko, appointmentType, date, time, instructions, price, telefon } = bookingData;
+    const { meno, priezvisko, appointmentType, date, time, instructions, price } = bookingData;
     
-    let message = `Potvrdenie rezervácie:\n`;
-    message += `${meno} ${priezvisko}\n`;
-    message += `${appointmentType}\n`;
-    message += `Dátum: ${this.formatDate(date)}\n`;
-    message += `Čas: ${time} (čas je orientačný)\n`;
-    message += `Telefón: ${telefon}\n`;
+    // Optimized nice message within 1 SMS segment (~150 chars max)
+    const shortDate = this.formatShortDate(date);
+    const shortType = this.getShortAppointmentType(appointmentType);
+    
+    let message = `✅ ${meno} ${priezvisko}\n`;
+    message += `📅 ${shortType} ${shortDate} o ${time}\n`;
     
     if (price) {
-      message += `Cena: ${price}€\n`;
+      message += `💰 ${price}€ `;
     }
     
+    // Add key instruction
     if (instructions) {
-      message += `\nDôležité: ${instructions}\n`;
+      const shortInstruction = this.getShortInstruction(instructions);
+      if (shortInstruction) {
+        message += `${shortInstruction}\n`;
+      }
     }
     
-    message += `\nOrdinácia Dr. Vahovič, Humenné`;
+    message += `🏥 Dr. Vahovic Humenne`;
     
     return message;
+  }
+  
+  formatShortDate(dateString) {
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    return `${day}.${month}.`;
+  }
+  
+  getShortAppointmentType(appointmentType) {
+    const shortNames = {
+      'Vstupné vyšetrenie': 'Vstupne',
+      'Kontrolné vyšetrenie': 'Kontrola', 
+      'Športová prehliadka': 'Sport. prehliadka',
+      'Zdravotnícke pomôcky': 'Zdrav. pomucky',
+      'Konzultácia s lekárom': 'Konzultacia'
+    };
+    return shortNames[appointmentType] || appointmentType;
+  }
+  
+  getShortInstruction(instructions) {
+    if (!instructions) return '';
+    
+    // Keep only essential information, shortened
+    if (instructions.includes('Nie je hradené poisťovňou')) {
+      return '(Nie poistovna)';
+    }
+    if (instructions.includes('nalačno')) {
+      return '(Nalacno)';
+    }
+    if (instructions.includes('výmenný lístok')) {
+      return '(Vymenny listok)';
+    }
+    
+    return '';
   }
 
   generateWhatsAppMessage(bookingData) {
@@ -123,17 +192,31 @@ class NotificationService {
   }
 
   async sendTwilioSMS(phoneNumber, message) {
+    console.log('📱 TWILIO SMS DEBUG - Starting SMS send process');
+    console.log('📱 TWILIO SMS DEBUG - Phone:', phoneNumber);
+    console.log('📱 TWILIO SMS DEBUG - Message length:', message.length);
+    console.log('📱 TWILIO SMS DEBUG - From number:', process.env.TWILIO_SMS_NUMBER);
+    console.log('📱 TWILIO SMS DEBUG - Twilio client exists:', !!this.twilioClient);
+    
     try {
       const result = await this.twilioClient.messages.create({
         body: message,
-        from: process.env.TWILIO_PHONE_NUMBER,
+        from: process.env.TWILIO_SMS_NUMBER,
         to: phoneNumber
       });
       
-      console.log(`✅ SMS sent via Twilio: ${result.sid}`);
+      console.log(`✅ SMS sent via Twilio successfully!`);
+      console.log(`✅ Message SID: ${result.sid}`);
+      console.log(`✅ Status: ${result.status}`);
+      console.log(`✅ To: ${result.to}`);
+      console.log(`✅ From: ${result.from}`);
       return { success: true, provider: 'twilio', messageId: result.sid };
     } catch (error) {
-      console.error('Twilio SMS error:', error);
+      console.error('❌ TWILIO SMS ERROR - Full error object:', error);
+      console.error('❌ TWILIO SMS ERROR - Message:', error.message);
+      console.error('❌ TWILIO SMS ERROR - Code:', error.code);
+      console.error('❌ TWILIO SMS ERROR - More Info:', error.moreInfo);
+      console.error('❌ TWILIO SMS ERROR - Status:', error.status);
       throw error;
     }
   }

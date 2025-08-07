@@ -69,8 +69,8 @@ async function findClosestSlot(appointmentType, date, preferredTime) {
   
   // Check each slot for availability
   for (const slot of sortedSlots) {
-    // Check booking rules (daily/hourly limits)
-    const validation = await bookingValidator.validateBooking(appointmentType, date, slot.time);
+    // Check basic constraints only (skip database limits)
+    const validation = await bookingValidator.validateBasicConstraints(appointmentType, date, slot.time);
     if (!validation.valid) {
       continue;
     }
@@ -264,8 +264,8 @@ async function getAvailableSlots(appointmentType, date) {
   // Generate all possible time slots
   const allSlots = generateTimeSlots(config.timeSlots, config.duration);
   
-  // Use optimized bulk validation to reduce database queries
-  const validationResults = await bookingValidator.validateMultipleSlots(appointmentType, date, allSlots);
+  // Use basic validation without database limits
+  const validationResults = await bookingValidator.validateMultipleSlotsBasic(appointmentType, date, allSlots);
   const availableSlots = [];
   
   // Check Google Calendar conflicts only for slots that passed validation
@@ -356,15 +356,15 @@ async function bookAppointment(bookingData) {
     throw new Error(`Missing patient data - normalizedData: ${JSON.stringify(normalizedData)}`);
   }
   
-  // Validate booking constraints (working days, time slots, daily/hourly limits)
-  const validation = await bookingValidator.validateBooking(appointmentType, date, time);
-  if (!validation.valid) {
+  // Basic validation (working days, time slots) - skip database limits for now
+  const basicValidation = await bookingValidator.validateBasicConstraints(appointmentType, date, time);
+  if (!basicValidation.valid) {
     // Find closest available alternative
-    const suggestion = await findAlternativeSlot(appointmentType, date, time, validation.reason);
+    const suggestion = await findAlternativeSlot(appointmentType, date, time, basicValidation.reason);
     return {
       booked: 'no',
-      error: validation.reason,
-      message: getErrorMessageWithSuggestion(validation.reason, suggestion)
+      error: basicValidation.reason,
+      message: getErrorMessageWithSuggestion(basicValidation.reason, suggestion)
     };
   }
   
@@ -373,11 +373,12 @@ async function bookAppointment(bookingData) {
   const startDateTime = new Date(`${date}T${time}:00+02:00`);
   const endDateTime = new Date(startDateTime.getTime() + config.duration * 60000);
   
+  let hasConflict = false;
   try {
     const dateObj = new Date(date);
     const existingEvents = await googleCalendarService.getDayEvents(calendarId, dateObj);
     
-    const hasConflict = existingEvents.some(event => {
+    hasConflict = existingEvents.some(event => {
       if (!event.start || !event.end) return false;
       
       const eventStart = new Date(event.start.dateTime || event.start.date);
@@ -395,8 +396,11 @@ async function bookAppointment(bookingData) {
         message: getErrorMessageWithSuggestion('time_slot_occupied', suggestion)
       };
     }
+    
+    console.log('✅ Google Calendar conflict check passed - no conflicts found');
   } catch (calendarError) {
-    console.log('⚠️ Google Calendar not available for conflict checking, proceeding with caution');
+    console.log('⚠️ Google Calendar not available for conflict checking, proceeding with booking creation');
+    console.log('⚠️ Calendar error:', calendarError.message);
   }
   
   try {

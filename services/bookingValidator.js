@@ -68,6 +68,27 @@ class BookingValidator {
 
   // Count management is now handled by the database service
 
+  // Basic validation without database limits - for use when Google Calendar is primary source
+  async validateBasicConstraints(appointmentType, date, time) {
+    const config = appointmentConfig.appointmentTypes[appointmentType];
+    if (!config) {
+      return { valid: false, reason: 'invalid_appointment_type' };
+    }
+
+    // Check if it's a working day
+    if (!this.isWorkingDay(date)) {
+      return { valid: false, reason: 'not_working_day' };
+    }
+
+    // Check if time slot is valid for this appointment type
+    if (!this.isValidTimeSlot(appointmentType, time)) {
+      return { valid: false, reason: 'invalid_time_slot' };
+    }
+
+    // Skip database limits - rely on Google Calendar for conflict detection
+    return { valid: true };
+  }
+
   async validateBooking(appointmentType, date, time) {
     const config = appointmentConfig.appointmentTypes[appointmentType];
     if (!config) {
@@ -116,6 +137,27 @@ class BookingValidator {
   }
 
   // Booking CRUD operations are now handled by the database service
+
+  // Basic bulk validation without database limits
+  async validateMultipleSlotsBasic(appointmentType, date, timeSlots) {
+    const config = appointmentConfig.appointmentTypes[appointmentType];
+    if (!config) {
+      return timeSlots.map(time => ({ time, valid: false, reason: 'invalid_appointment_type' }));
+    }
+
+    // Check if it's a working day (same for all slots)
+    if (!this.isWorkingDay(date)) {
+      return timeSlots.map(time => ({ time, valid: false, reason: 'not_working_day' }));
+    }
+
+    // Validate each time slot without database checks
+    return timeSlots.map(time => {
+      if (!this.isValidTimeSlot(appointmentType, time)) {
+        return { time, valid: false, reason: 'invalid_time_slot' };
+      }
+      return { time, valid: true };
+    });
+  }
 
   // Optimized bulk validation to reduce database queries
   async validateMultipleSlots(appointmentType, date, timeSlots) {
