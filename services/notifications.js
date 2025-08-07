@@ -126,26 +126,26 @@ class NotificationService {
   generateSMSMessage(bookingData) {
     const { meno, priezvisko, appointmentType, date, time, instructions, price } = bookingData;
     
-    // Optimized nice message within 1 SMS segment (~150 chars max)
-    const shortDate = this.formatShortDate(date);
-    const shortType = this.getShortAppointmentType(appointmentType);
+    // Professional SMS message with all necessary information
+    const formattedDate = this.formatDate(date);
     
-    let message = `✅ ${meno} ${priezvisko}\n`;
-    message += `📅 ${shortType} ${shortDate} o ${time}\n`;
+    let message = `POTVRDENIE REZERVACIE\n\n`;
+    message += `Pacient: ${meno} ${priezvisko}\n`;
+    message += `Typ vysetrenia: ${appointmentType}\n`;
+    message += `Datum: ${formattedDate}\n`;
+    message += `Cas: ${time} (cas je orientacny)\n`;
     
     if (price) {
-      message += `💰 ${price}€ `;
+      message += `Cena: ${price} EUR\n`;
     }
     
-    // Add key instruction
     if (instructions) {
-      const shortInstruction = this.getShortInstruction(instructions);
-      if (shortInstruction) {
-        message += `${shortInstruction}\n`;
-      }
+      message += `\nDOLEZITE INFORMACIE:\n${instructions}\n`;
     }
     
-    message += `🏥 Dr. Vahovic Humenne`;
+    message += `\nOrdiancia Dr. Milan Vahovic\n`;
+    message += `Humenne\n`;
+    message += `Tel: ${appointmentConfig.fallbackPhone}`;
     
     return message;
   }
