@@ -168,18 +168,25 @@ class NotificationService {
   getShortInstruction(instructions) {
     if (!instructions) return '';
     
-    // Keep only essential information, shortened
-    if (instructions.includes('Nie je hradené poisťovňou')) {
-      return '(Nie poistovna)';
-    }
+    let shortInstructions = [];
+    
     if (instructions.includes('nalačno')) {
-      return '(Nalacno)';
+      shortInstructions.push('nalačno');
+    }
+    if (instructions.includes('jedlo') || instructions.includes('voda')) {
+      shortInstructions.push('prineste jedlo/vodu');
+    }
+    if (instructions.includes('prezlečenie') || instructions.includes('uterák')) {
+      shortInstructions.push('veci na prezlečenie');
+    }
+    if (instructions.includes('Nie je hradené poisťovňou')) {
+      shortInstructions.push('nie poisťovňa');
     }
     if (instructions.includes('výmenný lístok')) {
-      return '(Vymenny listok)';
+      shortInstructions.push('výmenný lístok');
     }
     
-    return '';
+    return shortInstructions.length > 0 ? shortInstructions.join(', ') : '';
   }
 
   generateWhatsAppMessage(bookingData) {
