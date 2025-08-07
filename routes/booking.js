@@ -175,10 +175,14 @@ router.post('/webhook', async (req, res) => {
           const month = String(searchDate.getMonth() + 1).padStart(2, '0');
           const day = String(searchDate.getDate()).padStart(2, '0');
           const searchDateStr = `${year}-${month}-${day}`;
+          
+          console.log(`🔍 Searching day ${i + 1}: ${searchDateStr}`);
           const slot = await findClosestSlot(appointment_type, searchDateStr, preferred_time);
+          console.log(`🔍 Found slot for ${searchDateStr}: ${slot || 'none'}`);
           
           if (slot) {
             foundSlot = { time: slot, date: searchDateStr };
+            console.log(`✅ Selected slot: ${slot} on ${searchDateStr}`);
             break;
           }
           
