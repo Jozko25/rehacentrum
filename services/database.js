@@ -53,6 +53,7 @@ class BookingDatabase {
         patient_complaints TEXT,
         calendar_id TEXT NOT NULL,
         event_id TEXT NOT NULL,
+        queue_number INTEGER,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
@@ -96,10 +97,22 @@ class BookingDatabase {
       )
     `);
 
+    // Add queue_number column to existing bookings table if it doesn't exist
+    try {
+      this.db.exec('ALTER TABLE bookings ADD COLUMN queue_number INTEGER');
+      console.log('✅ Added queue_number column to existing bookings table');
+    } catch (error) {
+      // Column already exists, which is fine
+      if (!error.message.includes('duplicate column name')) {
+        console.log('⚠️ queue_number column already exists or other error:', error.message);
+      }
+    }
+
     // Create indexes for better performance
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_bookings_date_time ON bookings(date, time);
       CREATE INDEX IF NOT EXISTS idx_bookings_appointment_type ON bookings(appointment_type);
+      CREATE INDEX IF NOT EXISTS idx_bookings_date_queue ON bookings(date, queue_number);
       CREATE INDEX IF NOT EXISTS idx_daily_counts_type_date ON daily_counts(appointment_type, date);
       CREATE INDEX IF NOT EXISTS idx_hourly_counts_type_date_hour ON hourly_counts(appointment_type, date, hour);
       CREATE INDEX IF NOT EXISTS idx_metrics_name_timestamp ON metrics(metric_name, timestamp);
@@ -108,13 +121,33 @@ class BookingDatabase {
     console.log('✅ Database tables created with indexes');
   }
 
+  // Queue number operations
+  async getNextQueueNumber(date) {
+    // Use a transaction to ensure atomic queue number assignment
+    const transaction = this.db.transaction(() => {
+      // Get the highest queue number for this date
+      const stmt = this.db.prepare(`
+        SELECT MAX(queue_number) as max_queue 
+        FROM bookings 
+        WHERE date = ?
+      `);
+      const result = stmt.get(date);
+      const nextNumber = (result?.max_queue || 0) + 1;
+      
+      console.log(`🔢 Queue number for ${date}: ${nextNumber} (previous max: ${result?.max_queue || 0})`);
+      return nextNumber;
+    });
+    
+    return transaction();
+  }
+
   // Booking operations
   async createBooking(bookingData) {
     const stmt = this.db.prepare(`
       INSERT INTO bookings (
         id, appointment_type, date, time, patient_name, patient_surname, 
-        patient_phone, patient_complaints, calendar_id, event_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        patient_phone, patient_complaints, calendar_id, event_id, queue_number
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     try {
@@ -128,14 +161,16 @@ class BookingDatabase {
         bookingData.patientData.telefon,
         bookingData.patientData.prvotne_tazkosti || null,
         bookingData.calendarId,
-        bookingData.eventId
+        bookingData.eventId,
+        bookingData.queueNumber
       );
 
       // Update counts only (database is used for counting, not conflict detection)
       await this.incrementDailyCount(bookingData.appointmentType, bookingData.date);
       await this.incrementHourlyCount(bookingData.appointmentType, bookingData.date, bookingData.time);
 
-      return { success: true, id: bookingData.id };
+      console.log(`✅ Booking created with queue number ${bookingData.queueNumber} for ${bookingData.date}`);
+      return { success: true, id: bookingData.id, queueNumber: bookingData.queueNumber };
     } catch (error) {
       console.error('Database insert error:', error);
       throw error;

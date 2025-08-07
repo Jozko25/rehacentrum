@@ -621,6 +621,10 @@ async function bookAppointment(bookingData) {
       // Release lock after successful creation
       await bookingLock.releaseLock(date, time);
       
+      // Get next queue number for this date
+      const queueNumber = await database.getNextQueueNumber(date);
+      console.log(`🔢 Assigned queue number ${queueNumber} for ${date}`);
+      
       // Add booking to database with normalized data
       console.log('🔍 dataValidation before DB:', dataValidation);
       console.log('🔍 normalizedData exists:', !!normalizedData);
@@ -628,14 +632,15 @@ async function bookAppointment(bookingData) {
       console.log('🔍 normalizedData.meno exists:', normalizedData?.meno);
       console.log('🔍 typeof normalizedData:', typeof normalizedData);
       
-      await database.createBooking({
+      const bookingResult = await database.createBooking({
         id: event.id,
         appointmentType: appointmentType,
         date,
         time,
         patientData: normalizedData,
         calendarId: calendarId,
-        eventId: event.id
+        eventId: event.id,
+        queueNumber: queueNumber
       });
       
       // Send notifications (don't wait for completion)
@@ -646,7 +651,8 @@ async function bookAppointment(bookingData) {
         time,
         instructions: config.instructions,
         price: config.price,
-        bookingId: event.id
+        bookingId: event.id,
+        queueNumber: queueNumber
       }).catch(error => {
         console.error('Notification error:', error);
       });

@@ -124,7 +124,7 @@ class NotificationService {
   }
 
   generateSMSMessage(bookingData) {
-    const { meno, date, time, instructions, price } = bookingData;
+    const { meno, date, time, instructions, price, queueNumber } = bookingData;
     
     // Single segment SMS (under 160 characters)
     const shortDate = this.formatShortDate(date);
@@ -140,6 +140,11 @@ class NotificationService {
       if (shortInstruction) {
         message += `, ${shortInstruction}`;
       }
+    }
+    
+    // Add queue number
+    if (queueNumber) {
+      message += `. Vaše poradové číslo je ${queueNumber}`;
     }
     
     message += `. Rehacentrum Humenné`;
@@ -190,13 +195,17 @@ class NotificationService {
   }
 
   generateWhatsAppMessage(bookingData) {
-    const { meno, priezvisko, appointmentType, date, time, instructions, price } = bookingData;
+    const { meno, priezvisko, appointmentType, date, time, instructions, price, queueNumber } = bookingData;
     
     let message = `🏥 *Potvrdenie rezervácie*\\n\\n`;
     message += `*Pacient:* ${meno} ${priezvisko}\\n`;
     message += `*Typ vyšetrenia:* ${appointmentType}\\n`;
     message += `*Dátum:* ${this.formatDate(date)}\\n`;
     message += `*Čas:* ${time} _(čas je orientačný)_\\n`;
+    
+    if (queueNumber) {
+      message += `*Poradové číslo:* ${queueNumber}\\n`;
+    }
     
     if (price) {
       message += `*Cena:* ${price}€\\n`;
