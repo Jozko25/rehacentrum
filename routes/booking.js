@@ -592,17 +592,21 @@ async function bookAppointment(bookingData) {
         duration: config.duration
       });
       try {
+        // Create Slovak time for booking timestamp
+        const now = new Date();
+        const slovakTime = new Date(now.toLocaleString("en-US", {timeZone: "Europe/Bratislava"}));
+        
         // Create nicely formatted description
         const formattedDescription = [
           `📋 ${config.name}`,
           `👤 ${normalizedData.meno} ${normalizedData.priezvisko}`,
           `📞 ${normalizedData.telefon}`,
-          normalizedData.prvotne_tazkosti ? `💬 ${normalizedData.prvotne_tazkosti}` : '',
+          normalizedData.prvotne_tazkosti && !normalizedData.prvotne_tazkosti.toLowerCase().includes('test') ? `💬 ${normalizedData.prvotne_tazkosti}` : '',
           queueNumber ? `🔢 Poradové číslo: ${queueNumber}` : '',
           config.price ? `💰 Cena: ${config.price}€` : '',
           config.instructions ? `ℹ️ ${config.instructions}` : '',
           '',
-          `🕒 Rezervované: ${new Date().toLocaleString('sk-SK')}`
+          `🕒 Rezervované: ${slovakTime.toLocaleDateString('sk-SK')} ${slovakTime.toLocaleTimeString('sk-SK')}`
         ].filter(line => line.trim() !== '').join('\n');
 
         event = await googleCalendarService.createEvent(calendarId, {
