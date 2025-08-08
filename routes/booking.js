@@ -318,8 +318,32 @@ router.post('/webhook', async (req, res) => {
         }
         break;
         
+      case 'send_fallback_sms':
+        const { client_phone, failure_reason } = req.body;
+        const testPhone = '+421910223761'; // Test number for now
+        
+        const failureReasons = {
+          'confusion': 'agent nerozumel klientovi',
+          'hangup': 'klient zavesil',
+          'no_understanding': 'komunikačná bariéra'
+        };
+        
+        const reasonText = failureReasons[failure_reason] || failure_reason;
+        const message = `🚨 Neúspešný hovor s klientom ${client_phone}. Dôvod: ${reasonText}. Prosím kontaktujte klienta manuálne.`;
+        
+        console.log(`📱 Sending fallback SMS for failed call - Client: ${client_phone}, Reason: ${failure_reason}`);
+        
+        try {
+          await notificationService.sendSMS(testPhone, message);
+          res.send('SMS s upozornením odoslané do ordinášky.');
+        } catch (error) {
+          console.error('Error sending fallback SMS:', error);
+          res.status(500).send('Chyba pri odosielaní SMS upozornenia.');
+        }
+        break;
+        
       default:
-        res.status(400).send('Neplatná požiadavka. Podporované akcie sú: get_available_slots, find_closest_slot, book_appointment, cancel_appointment, check_availability.');
+        res.status(400).send('Neplatná požiadavka. Podporované akcie sú: get_available_slots, find_closest_slot, book_appointment, cancel_appointment, check_availability, send_fallback_sms.');
     }
   } catch (error) {
     console.error('Webhook error:', error);
